@@ -34,6 +34,10 @@ Paste or enter the composition and rerun.
 
 “This value is visibly marked **Provided by user**. If I mark a field not disclosed, EcoMind keeps it unknown rather than zero.”
 
+Point to the traffic-light result.
+
+“The icon, label, score, grade and confidence all communicate the result, so colour is never the only signal. Green means lower impact under this prototype methodology—not impact-free and not a certification. Incomplete evidence stays provisional, and unreliable evidence produces a grey result.”
+
 ## 1:45–2:10 — Cross-retailer comparison
 
 Select **Save for comparison**, open a second real product on another store and analyse it.
@@ -42,7 +46,13 @@ Select **Save for comparison**, open a second real product on another store and 
 
 Select **Record real-product comparison** to add +5 demo EcoPoints.
 
-## 2:10–2:25 — Close honestly
+## 2:10–2:30 — Show voluntary progress
+
+Open the web dashboard, then the leaderboard.
+
+“EcoPoints reward meaningful actions such as comparing, saving a lower-impact option or recording a repair. Scans and purchases earn nothing. Joining the local leaderboard is optional, fictional participants are labelled as sample data, and traffic-light colours are never used to judge people or rank positions.”
+
+## 2:30–2:45 — Close honestly
 
 “EcoMind requests no browsing-history, payment, cookie or all-sites permission. Retailer support is best-effort, the weights need expert validation, and every score is provisional—not a certification.”
 

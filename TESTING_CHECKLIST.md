@@ -52,6 +52,16 @@
 - [ ] Repair/reuse challenge awards 20 points once and is labelled self-reported.
 - [ ] No-buy challenge awards 25 points once and is labelled self-reported.
 - [ ] Dashboard trend is labelled sample data.
+- [ ] Traffic status is hidden before analysis and appears afterward with icon, text, confidence and accessible label.
+- [ ] 27 is Red/Higher impact, ~51 is Amber/Mixed impact and 78 is Green/Lower impact.
+- [ ] Missing or unsupported evidence is Grey/Not enough information.
+- [ ] Methodology, drawer and popup contain the traffic-light legend.
+- [ ] Leaderboard opt-in accepts a safe nickname and rejects contact information/HTML.
+- [ ] Weekly/monthly/all-time tabs update from the same point events as the dashboard.
+- [ ] Scans and purchases award no points; duplicate and capped actions do not award again.
+- [ ] Weekly challenges can be claimed only once; self-reported items are labelled.
+- [ ] Leaving removes the local leaderboard profile without deleting wishlist or private activity.
+- [ ] At 390px, ranking rows become stacked cards with no horizontal overflow.
 - [ ] Impact copy avoids exact verified-savings claims.
 - [ ] Recent activity updates.
 - [ ] Page reload preserves wishlist, points and activity.

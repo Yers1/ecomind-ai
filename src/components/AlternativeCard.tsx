@@ -2,6 +2,7 @@ import { Leaf } from '@phosphor-icons/react'
 import type { Product } from '../types'
 import { calculateGreenScore } from '../lib/scoring'
 import { ConfidenceBadge } from './ConfidenceBadge'
+import { TrafficLightResult } from './TrafficLight'
 
 export function AlternativeCard({ product }: { product: Product }) {
   const result = calculateGreenScore(product)
@@ -24,7 +25,7 @@ export function AlternativeCard({ product }: { product: Product }) {
             <ConfidenceBadge level={product.confidenceLevel} />
           </div>
         </div>
-        <div className="alternative-card__score"><strong>{result.score}</strong><span>/100</span><b>{result.grade}</b></div>
+        <TrafficLightResult score={result.score} hasSufficientEvidence={result.knownWeight >= .35} provisional={result.provisional} confidence={product.confidenceLevel} grade={result.grade} compact />
       </div>
     </article>
   )

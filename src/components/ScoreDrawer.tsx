@@ -6,6 +6,7 @@ import { ConfidenceBadge } from './ConfidenceBadge'
 import { ScoreBadge } from './ScoreBadge'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog'
+import { TrafficLightLegend } from './TrafficLight'
 
 export function ScoreDrawer({
   product,
@@ -39,9 +40,10 @@ export function ScoreDrawer({
             <div><span>Sample listing</span><h2 id="analysis-title">{product.productName}</h2><p>£{product.price.toFixed(2)}</p></div>
           </div>
           <section className={`score-hero score-hero--${result.grade.toLowerCase()}`}>
-            <ScoreBadge result={result} size="large" />
+            <ScoreBadge result={result} confidence={product.confidenceLevel} size="large" />
             <div><span>{result.status}</span><h3>{result.explanation}</h3><p>{result.range ? `Estimated range: ${result.range.min}–${result.range.max}/100. Missing values are not treated as confirmed zero.` : 'Estimated score based on available sample product information.'}</p></div>
           </section>
+          <details className="traffic-help"><summary><Info size={18} /> How to read the traffic light</summary><TrafficLightLegend /></details>
           <div className="ai-method-note">
             <Brain size={20} weight="duotone" />
             <p><strong>Simulated AI analysis</strong> AI helps interpret product information. The score is calculated using the published EcoMind methodology.</p>

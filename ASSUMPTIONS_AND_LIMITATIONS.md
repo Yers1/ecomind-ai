@@ -47,6 +47,11 @@
 ## Impact and incentives limitations
 
 - The dashboard trend is labelled sample data.
+- The traffic-light status evaluates product evidence only. It never colours or judges users, ranks or koala levels.
+- Traffic-light thresholds are prototype assumptions shared by the website and extension; green means lower impact under this model, not impact-free or certified.
+- The leaderboard is opt-in and local. Other participants are deterministic fictional sample data.
+- Existing balances migrate to a `legacy-demo-balance` event and remain excluded from weekly rankings.
+- A real multi-user leaderboard requires a privacy-reviewed backend, authentication and abuse prevention. Web and extension local stores are not presented as cross-device synchronization.
 - The impact summary is directional and does not claim exact verified savings.
 - EcoPoints are demo rewards only.
 - The prototype does not verify purchases, repairs, reuse or no-buy decisions.

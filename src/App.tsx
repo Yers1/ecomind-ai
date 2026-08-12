@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { AppShell, type Page } from './components/AppShell'
 import { DashboardPage } from './pages/DashboardPage'
 import { LandingPage } from './pages/LandingPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 import { MethodologyPage } from './pages/MethodologyPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { StoreDemoPage } from './pages/StoreDemoPage'
 import { WishlistPage } from './pages/WishlistPage'
 
-const validPages: Page[] = ['home', 'demo', 'dashboard', 'wishlist', 'methodology', 'privacy']
+const validPages: Page[] = ['home', 'demo', 'dashboard', 'leaderboard', 'wishlist', 'methodology', 'privacy']
 
 function pageFromHash(): Page {
   const hash = window.location.hash.replace('#/', '') as Page
@@ -33,6 +34,7 @@ export default function App() {
       {page === 'home' && <LandingPage navigate={navigate} />}
       {page === 'demo' && <StoreDemoPage navigate={navigate} />}
       {page === 'dashboard' && <DashboardPage navigate={navigate} />}
+      {page === 'leaderboard' && <LeaderboardPage navigate={navigate} />}
       {page === 'wishlist' && <WishlistPage navigate={navigate} />}
       {page === 'methodology' && <MethodologyPage navigate={navigate} />}
       {page === 'privacy' && <PrivacyPage navigate={navigate} />}

@@ -42,7 +42,7 @@ export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
                 <article className="wishlist-card" key={product.id}>
                   <div className="wishlist-card__image"><img src={product.image} alt={product.productName} /></div>
                   <div className="wishlist-card__body">
-                    <div className="wishlist-card__top"><span>£{product.price.toFixed(2)}</span><ScoreBadge result={score} size="small" /></div>
+                    <div className="wishlist-card__top"><span>£{product.price.toFixed(2)}</span><ScoreBadge result={score} confidence={product.confidenceLevel} size="small" /></div>
                     <h2>{product.productName}</h2>
                     <ConfidenceBadge level={product.confidenceLevel} />
                     <p>{score.explanation}</p>

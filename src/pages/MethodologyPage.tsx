@@ -2,6 +2,7 @@ import { ArrowRight, Brain, CheckCircle, Database, Leaf, Package, Recycle, Shiel
 import type { Page } from '../components/AppShell'
 import { getProduct } from '../data/products'
 import { calculateGreenScore, SCORE_WEIGHTS } from '../lib/scoring'
+import { TrafficLightLegend, TrafficLightResult } from '../components/TrafficLight'
 
 const factors = [
   { icon: Leaf, name: 'Material impact', weight: SCORE_WEIGHTS.materials, text: 'A weighted score from the material mix using sample textile factors.' },
@@ -16,7 +17,7 @@ export function MethodologyPage({ navigate }: { navigate: (page: Page) => void }
   const result = calculateGreenScore(sample)
   return (
     <div className="methodology-page page-surface">
-      <header className="page-hero container method-header"><div><p className="kicker">Published EcoMind methodology</p><h1>One score. Five visible factors.</h1><p>The numeric Green Score is deterministic. AI interprets listing text but never decides the score.</p></div><div className="method-score"><strong>{result.score}</strong><span>/100</span><b>{result.grade}</b><small>sample calculation</small></div></header>
+      <header className="page-hero container method-header"><div><p className="kicker">Published EcoMind methodology</p><h1>One score. Five visible factors.</h1><p>The numeric Green Score is deterministic. AI interprets listing text but never decides the score.</p></div><div className="method-score"><TrafficLightResult score={result.score} hasSufficientEvidence={result.knownWeight >= .35} provisional={result.provisional} confidence={sample.confidenceLevel} grade={result.grade} /><small>sample calculation</small></div></header>
       <div className="container method-content">
         <section className="formula-card"><div><h2>The formula</h2><p>Each factor is normalised from 0 to 100, multiplied by its fixed weight, then rounded to the nearest whole number.</p></div><code>Green Score = M × 0.35 + C × 0.25 + R × 0.20 + D × 0.10 + P × 0.10</code></section>
         <section className="factor-list">
@@ -40,6 +41,7 @@ export function MethodologyPage({ navigate }: { navigate: (page: Page) => void }
           <div><h2>Source labels used in this demo</h2><p>Every value is attached to a source type. None of these labels imply an external partnership or verified dataset.</p></div>
           <div>{sample.sources.map((source) => <article key={`${source.type}-${source.label}`}><span>{source.type.replaceAll('-', ' ')}</span><h3>{source.label}</h3><p>{source.note}</p></article>)}</div>
         </section>
+        <section className="traffic-method"><div><h2>Traffic-light thresholds</h2><p>The same shared thresholds appear on the website and extension after analysis. Colour never evaluates a person or leaderboard position.</p></div><TrafficLightLegend /></section>
         <section className="future-data"><h2>Real-page evidence</h2><p>The extension can structure fields disclosed on an active clothing product page after user activation. A material-based factor may use a clearly labelled EcoMind prototype range; carbon and durability remain unknown unless supporting evidence exists. Retailer markup changes, user corrections are labelled separately, and every real-page result remains provisional.</p></section>
         <section className="future-data"><h2>What production data would require</h2><p>A real release could use reviewed lifecycle-assessment data, environmental-footprint datasets, licensed textile datasets, independently checked certifications and permissioned retailer product information. EcoMind would need provenance, versioning, geographic relevance and expert review before using any source in a consumer-facing score.</p></section>
         <section className="method-next"><div><h2>See the methodology in action</h2><p>Compare products with high, medium and low confidence.</p></div><button className="button button--primary" onClick={() => navigate('demo')}>Open product demo <ArrowRight size={18} /></button></section>

@@ -75,6 +75,8 @@ Key features:
 - provisional score or score-withheld result when evidence is insufficient;
 - optional user-labelled corrections stored only on the device;
 - saved extracted fields for comparison across products and retailers;
+- accessible traffic-light explanations whose thresholds are shared with the web app;
+- optional local leaderboard profile and weekly EcoPoints summary;
 - no external product-analysis server, advertisements or payment-data access.
 
 Scores are educational prototype estimates, not certifications or lifecycle assessments. Retailer compatibility is best-effort and no retailer partnership is claimed.
@@ -115,7 +117,8 @@ Use the wording shown by the current dashboard, but keep these facts consistent:
 - EcoMind's single purpose is the local analysis and comparison described above.
 - It accesses **website content** only on the active page after the user presses the analysis button.
 - Product-page content is processed locally and is not transmitted to EcoMind or another server.
-- Only extracted comparison fields, manual corrections, preferences, wishlist items and demo EcoPoints are stored in `chrome.storage.local`.
+- Only extracted comparison fields, manual corrections, preferences, wishlist items, timestamped demo EcoPoint events and the optional leaderboard nickname are stored in `chrome.storage.local`.
+- The leaderboard prototype is local: only the chosen nickname, points and action count are ranked. Product names, scores, browsing history, spending and wishlist contents are not leaderboard fields.
 - It does not collect browsing history, cookies, account credentials, orders, cart contents or payment information.
 - It does not sell data, use data for advertising, or allow humans to read page content.
 

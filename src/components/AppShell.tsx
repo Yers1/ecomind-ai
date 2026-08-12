@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Brand } from './Brand'
 import { useEcoMind } from '../state/EcoMindContext'
 
-export type Page = 'home' | 'demo' | 'dashboard' | 'wishlist' | 'methodology' | 'privacy'
+export type Page = 'home' | 'demo' | 'dashboard' | 'leaderboard' | 'wishlist' | 'methodology' | 'privacy'
 
 export function AppShell({ page, navigate, children }: { page: Page; navigate: (page: Page) => void; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -22,6 +22,7 @@ export function AppShell({ page, navigate, children }: { page: Page; navigate: (
         <nav className={`site-nav ${mobileOpen ? 'site-nav--open' : ''}`} aria-label="Primary navigation">
           <button onClick={() => go('demo')}>Product demo</button>
           <button className={page === 'dashboard' ? 'is-active' : ''} onClick={() => go('dashboard')}>Dashboard</button>
+          <button className={page === 'leaderboard' ? 'is-active' : ''} onClick={() => go('leaderboard')}>Leaderboard</button>
           <button className={page === 'wishlist' ? 'is-active' : ''} onClick={() => go('wishlist')}>Wishlist {wishlist.length > 0 && <span>{wishlist.length}</span>}</button>
           <button className={page === 'methodology' ? 'is-active' : ''} onClick={() => go('methodology')}>Methodology</button>
           <button className={page === 'privacy' ? 'is-active' : ''} onClick={() => go('privacy')}>Privacy</button>

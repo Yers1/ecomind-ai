@@ -27,6 +27,7 @@ EcoMind must not resemble greenwashing, an Amazon-only product, an official reta
 3. Keep user agency explicit: analyse only after activation and reward learning, saving, repair/reuse or mindful non-purchase—not an implied purchase.
 4. Preserve the shopping context: retailer-specific parsers enrich shared structured-data fallbacks, while the koala remains visibly separate as an extension layer.
 5. Explain the system: AI structures information; the published deterministic formula calculates the score.
+6. Separate products from people: traffic-light states describe available product evidence only; leaderboard position reflects voluntary EcoPoint actions and never receives a red, amber or green judgement.
 
 ## Accessibility & Inclusion
 

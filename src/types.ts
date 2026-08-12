@@ -21,4 +21,5 @@ export interface ActivityItem {
   detail: string
   points: number
   date: string
+  timestamp?: string
 }

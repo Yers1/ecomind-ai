@@ -2,14 +2,11 @@ import { ArrowRight, Brain, Eye, Heart, Leaf, LockKey, Recycle, ShieldCheck, Spa
 import type { Page } from '../components/AppShell'
 import { Brand } from '../components/Brand'
 import { KoalaMascot } from '../components/KoalaMascot'
-import { ScoreBadge } from '../components/ScoreBadge'
 import { getProduct } from '../data/products'
 import { surveyInsights } from '../data/surveyInsights'
-import { calculateGreenScore } from '../lib/scoring'
 
 export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
   const heroProduct = getProduct('renew-loop-tee')
-  const heroScore = calculateGreenScore(heroProduct)
   return (
     <div className="landing-page">
       <section className="hero container">
@@ -35,8 +32,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           </div>
           <button className="widget-preview" onClick={() => navigate('demo')} aria-label="Open the interactive EcoMind product demo">
             <KoalaMascot size={52} points={75} />
-            <ScoreBadge result={heroScore} size="small" />
-            <span><b>{heroScore.status}</b><small>See why</small></span>
+            <span className="preview-locked"><b>Score hidden</b><small>Activate EcoMind to reveal</small></span>
             <ArrowRight size={19} />
           </button>
         </div>

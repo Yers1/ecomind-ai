@@ -8,6 +8,34 @@ Built by Team 17 for the Teens in AI AI4Good Incubator 2026, addressing SDG 13: 
 
 > Scores, factor ranges and rewards are educational prototype estimates—not certifications, lifecycle assessments or verified savings. Retailer compatibility is best-effort and no retailer partnership is claimed.
 
+## Traffic-light Green Score
+
+Every analysed result uses the same shared thresholds from `shared/trafficLight.ts`:
+
+- 70–100: Green — Lower impact;
+- 40–69: Amber — Mixed impact;
+- 0–39: Red — Higher impact;
+- insufficient evidence: Grey — Not enough information.
+
+The status always includes a shape/icon, visible label, score or range, grade where available, confidence and accessible text. It is hidden before analysis. Green means lower impact under the prototype methodology—not environmentally friendly, impact-free or certified.
+
+## Local prototype leaderboard
+
+The optional weekly leaderboard ranks EcoPoints earned through meaningful actions—not purchases, scans, spending or average product scores. It includes period tabs for this week, this month and all time; an opt-in nickname profile; top three and full ranking; weekly challenges; current-user pinning; and deterministic fictional participants labelled as sample data.
+
+Shared point rules live in `shared/ecoPoints.ts`:
+
+- compare a greener alternative: +5;
+- save a lower-impact option: +5;
+- choose a lower-impact option: +10 when explicitly recorded, never inferred from a purchase;
+- repair or reuse: +20, self-reported and capped;
+- pause an unnecessary purchase: +25, self-reported and capped;
+- complete a weekly challenge: +30, once per challenge and week;
+- analyse or scan: 0;
+- purchase: 0 automatic points.
+
+Each event has a timestamp, source and deduplication key. The dashboard, koala progression, activity history, leaderboard and extension popup derive their summaries from this shared event model. Web local storage and `chrome.storage.local` remain separate browser stores; the Threadly bridge can merge matching action keys while the web app is open, but cross-origin/cross-device synchronization is not claimed.
+
 ## What the extension does
 
 After the user selects **Analyse this product**, EcoMind receives temporary access to only the active tab and:
@@ -158,6 +186,7 @@ Append `?ecomind-debug=true` to a product URL before analysis, or enable the sto
 ```bash
 npm install
 npm run lint
+npm run test:engagement
 npm run test:parsers
 npm run test:extension
 npm run test
@@ -224,6 +253,10 @@ scripts/test-extension.mjs    # Injected-flow and persistence suite
 - Real alternatives come only from products the user analyses and saves; there is no commercial product-search API.
 - The connected development environment cannot automate Chrome's protected `chrome://extensions` page, so final Load unpacked confirmation remains a user-controlled step.
 - The extension is not yet published in the Chrome Web Store.
+- The leaderboard combines the local user's real demo actions with clearly labelled sample participants. A production multi-user leaderboard requires a privacy-reviewed backend and abuse prevention.
+- Web and extension storage cannot remain automatically synchronized on arbitrary retailer origins; both use the same event schema and deduplication keys, but the local stores are technically separate.
+
+The minimal future leaderboard data model is documented in [LEADERBOARD_BACKEND.md](LEADERBOARD_BACKEND.md).
 
 See [REAL_RETAILER_TESTING.md](REAL_RETAILER_TESTING.md), [VERIFICATION.md](VERIFICATION.md) and [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md).
 

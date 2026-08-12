@@ -2,9 +2,10 @@ import { BookmarkSimple, CheckCircle, Eye, X } from '@phosphor-icons/react'
 import { createPortal } from 'react-dom'
 import type { Product } from '../types'
 import { packagingLabels } from '../data/products'
-import { calculateGreenScore, formatScore } from '../lib/scoring'
+import { calculateGreenScore } from '../lib/scoring'
 import { ConfidenceBadge } from './ConfidenceBadge'
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog'
+import { TrafficLightResult } from './TrafficLight'
 
 const formatMaterials = (product: Product) => product.materials.map((item) => `${item.percentage}% ${item.material}`).join(', ')
 const formatCarbon = (product: Product) => product.estimatedCarbonKg === null ? 'Not disclosed' : `About ${product.estimatedCarbonKg.toFixed(1)} kg CO2e (${product.carbonValueType})`
@@ -15,7 +16,6 @@ export function ProductComparison({ current, alternative, open, onClose, onSave,
   const currentScore = calculateGreenScore(current)
   const alternativeScore = calculateGreenScore(alternative)
   const rows = [
-    ['Green Score', `${formatScore(currentScore)}/100, ${currentScore.grade}${currentScore.provisional ? ' provisional' : ''}`, `${formatScore(alternativeScore)}/100, ${alternativeScore.grade}${alternativeScore.provisional ? ' provisional' : ''}`],
     ['Materials', formatMaterials(current), formatMaterials(alternative)],
     ['Recycled content', current.recycledContentPercentage === null ? 'Not disclosed' : `${current.recycledContentPercentage}%`, alternative.recycledContentPercentage === null ? 'Not disclosed' : `${alternative.recycledContentPercentage}%`],
     ['Estimated carbon', formatCarbon(current), formatCarbon(alternative)],
@@ -42,6 +42,7 @@ export function ProductComparison({ current, alternative, open, onClose, onSave,
           </div>
         </div>
         <div className="comparison-table" role="table" aria-label="Product sustainability comparison">
+          <div className="comparison-row comparison-row--traffic" role="row"><strong role="rowheader">Green Score</strong><span role="cell"><TrafficLightResult score={currentScore.score} hasSufficientEvidence={currentScore.knownWeight >= .35} provisional={currentScore.provisional} confidence={current.confidenceLevel} grade={currentScore.grade} compact /></span><span role="cell"><TrafficLightResult score={alternativeScore.score} hasSufficientEvidence={alternativeScore.knownWeight >= .35} provisional={alternativeScore.provisional} confidence={alternative.confidenceLevel} grade={alternativeScore.grade} compact /></span></div>
           {rows.map(([label, left, right]) => (
             <div className="comparison-row" role="row" key={label}>
               <strong role="rowheader">{label}</strong>

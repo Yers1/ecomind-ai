@@ -26,10 +26,14 @@
 
       <button id="analyseButton" class="primary-button" type="button" disabled>Analyse this product</button>
 
+      <section id="trafficResult" class="popup-traffic" hidden aria-live="polite"></section>
+      <details class="popup-legend"><summary>Traffic-light help</summary><ul><li><i class="green">✓</i><span>Green: Lower impact</span></li><li><i class="amber">−</i><span>Amber: Mixed impact</span></li><li><i class="red">!</i><span>Red: Higher impact</span></li><li><i class="grey">?</i><span>Grey: Not enough information</span></li></ul><p>Product status only. Green is not a certification.</p></details>
+
       <div class="summary-row">
         <div class="points"><span>Demo EcoPoints</span><strong id="pointsValue">0</strong></div>
         <button id="dashboardButton" class="dashboard-button" type="button">Open dashboard <span aria-hidden="true">→</span></button>
       </div>
+      <section class="leaderboard-mini"><div><span>Weekly community</span><strong id="weeklyRank">Not joined</strong><small id="weeklySummary">0 weekly EcoPoints · Starter Koala</small></div><button id="leaderboardButton" type="button">Open leaderboard <span aria-hidden="true">→</span></button><p>Other participants are deterministic sample data.</p></section>
 
       <footer>
         <p><strong>Private by design.</strong> EcoMind reads the active product page only after you click. Analysis stays on this device.</p>

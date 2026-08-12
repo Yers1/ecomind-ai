@@ -9,7 +9,7 @@ Verified on 12 August 2026 against the presentation-ready source.
 - `npm run build` — passed TypeScript and Vite production build; 4,596 modules transformed.
 - `npm run build:extension` — generated `dist-extension`.
 - `npx tsc -p extension/tsconfig.json --noEmit` — passed extension TypeScript checks.
-- `npm run test` — passed shared-core, parser and production extension integration suites.
+- `npm run test` — passed shared-core, traffic-light/engagement, parser and production extension integration suites.
 
 ## Automated behaviour covered
 
@@ -25,6 +25,11 @@ Verified on 12 August 2026 against the presentation-ready source.
 - real cross-retailer comparison and the clearly labelled Threadly demo comparison;
 - wishlist and EcoPoints persistence;
 - duplicate reward prevention.
+- exact red/amber/green threshold boundaries and grey insufficient-evidence handling;
+- provisional score formatting and accessible traffic-light text for every status;
+- matching website/extension traffic-light imports and no pre-analysis result;
+- timestamped EcoPoint events, period reset calculations, ties, rank changes and weekly caps;
+- optional leaderboard profile lifecycle, nickname validation and repository abstraction.
 
 ## Browser journey
 

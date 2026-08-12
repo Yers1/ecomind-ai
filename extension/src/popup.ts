@@ -1,4 +1,6 @@
 import { readExtensionState, STORAGE_KEY, type ExtensionState } from './shared'
+import { buildLeaderboard, getKoalaLevel, periodSummary, rankFor } from '../../shared/ecoPoints'
+import { formatTrafficLightScore, getTrafficLightStatus, trafficLightAccessibleText } from '../../shared/trafficLight'
 
 type PageState = 'checking' | 'ready' | 'possible-product' | 'analysing' | 'success' | 'missing-data' | 'low-confidence' | 'product-changed' | 'unsupported-category' | 'unsupported' | 'restricted' | 'access-error' | 'error'
 
@@ -6,6 +8,12 @@ interface StatusMessage {
   type: 'ECOMIND_STATUS_UPDATE' | 'ECOMIND_GET_STATUS'
   state?: PageState
   detail?: string
+  score?: number | null
+  range?: [number, number] | null
+  grade?: string | null
+  confidence?: 'High' | 'Medium' | 'Low'
+  provisional?: boolean
+  hasSufficientEvidence?: boolean
 }
 
 const statusCard = document.querySelector<HTMLElement>('.status-card')!
@@ -15,6 +23,10 @@ const retailerValue = document.querySelector<HTMLElement>('#retailerValue')!
 const analyseButton = document.querySelector<HTMLButtonElement>('#analyseButton')!
 const dashboardButton = document.querySelector<HTMLButtonElement>('#dashboardButton')!
 const pointsValue = document.querySelector<HTMLElement>('#pointsValue')!
+const trafficResult = document.querySelector<HTMLElement>('#trafficResult')!
+const leaderboardButton = document.querySelector<HTMLButtonElement>('#leaderboardButton')!
+const weeklyRank = document.querySelector<HTMLElement>('#weeklyRank')!
+const weeklySummary = document.querySelector<HTMLElement>('#weeklySummary')!
 
 let activeTab: chrome.tabs.Tab | undefined
 let currentState: PageState = 'checking'
@@ -35,13 +47,23 @@ const labels: Record<PageState, { title: string; detail: string }> = {
   error: { title: 'Analysis error', detail: 'The page may have changed. Try the analysis again or use manual entry.' },
 }
 
-function setStatus(state: PageState, detail?: string) {
+function setStatus(state: PageState, detail?: string, result?: StatusMessage) {
   currentState = state
   statusCard.dataset.state = state
   statusText.textContent = labels[state].title
   statusDetail.textContent = detail ?? labels[state].detail
   analyseButton.disabled = ['checking', 'analysing', 'restricted'].includes(state)
   analyseButton.textContent = state === 'product-changed' ? 'Re-analyse product' : ['success', 'missing-data', 'low-confidence', 'unsupported-category'].includes(state) ? 'Open EcoMind analysis' : state === 'error' || state === 'access-error' ? 'Try analysis again' : 'Analyse this product'
+  const showResult = ['success', 'missing-data', 'low-confidence', 'unsupported-category'].includes(state) && result?.confidence
+  trafficResult.hidden = !showResult
+  if (showResult) {
+    const status = getTrafficLightStatus(result?.score ?? null, result?.hasSufficientEvidence ?? false)
+    const accessible = trafficLightAccessibleText(status, result?.score ?? null, result?.provisional ?? true, result!.confidence!, result?.range)
+    const icon = status.colour === 'green' ? '✓' : status.colour === 'amber' ? '−' : status.colour === 'red' ? '!' : '?'
+    trafficResult.className = `popup-traffic popup-traffic--${status.colour}`
+    trafficResult.setAttribute('aria-label', accessible); trafficResult.title = status.shortExplanation
+    trafficResult.innerHTML = `<i>${icon}</i><span><strong>${formatTrafficLightScore(result?.score ?? null, result?.provisional ?? true, result?.range)}${result?.grade ? ` · ${result.grade}` : ''}</strong><b>${status.label}${result?.provisional && result.score !== null ? ' · Provisional' : ''}</b><small>${result!.confidence} confidence</small></span>`
+  }
 }
 
 function pageHint(url?: string) {
@@ -57,7 +79,12 @@ function pageHint(url?: string) {
   } catch { return { state: 'restricted' as const, retailer: 'Unavailable' } }
 }
 
-function refreshPoints(state: ExtensionState) { pointsValue.textContent = String(state.points) }
+function refreshPoints(state: ExtensionState) {
+  pointsValue.textContent = String(state.points)
+  const week = periodSummary(state.pointEvents, 'week'); const entries = buildLeaderboard(state.leaderboardProfile, state.pointEvents, 'week', state.points); const rank = rankFor(entries, 'week')
+  weeklyRank.textContent = state.leaderboardProfile.optedIn ? `Rank #${rank}` : 'Not joined'
+  weeklySummary.textContent = `${week.points} weekly EcoPoints · ${getKoalaLevel(state.points)}`
+}
 function getActiveTab(): Promise<chrome.tabs.Tab | undefined> { return new Promise((resolve) => chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => resolve(tabs[0]))) }
 function sendToTab(message: StatusMessage): Promise<StatusMessage | undefined> {
   return new Promise((resolve) => {
@@ -74,7 +101,7 @@ async function initialise() {
   dashboardButton.disabled = !activeTab?.url || !/ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(activeTab.url)
   if (hint.state === 'restricted') return setStatus('restricted')
   const existing = await sendToTab({ type: 'ECOMIND_GET_STATUS' })
-  setStatus(existing?.state ?? hint.state, existing?.detail)
+  setStatus(existing?.state ?? hint.state, existing?.detail, existing)
 }
 
 analyseButton.addEventListener('click', async () => {
@@ -95,6 +122,11 @@ dashboardButton.addEventListener('click', () => {
   const dashboardUrl = new URL(activeTab.url); dashboardUrl.hash = '/dashboard'; chrome.tabs.update(activeTab.id, { url: dashboardUrl.toString() }); window.close()
 })
 
-chrome.runtime.onMessage.addListener((message: StatusMessage) => { if (message.type === 'ECOMIND_STATUS_UPDATE' && message.state) setStatus(message.state, message.detail) })
+leaderboardButton.addEventListener('click', () => {
+  const base = activeTab?.url && /ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(activeTab.url) ? new URL(activeTab.url) : new URL('https://ecomind-ai-two.vercel.app')
+  base.hash = '/leaderboard'; chrome.tabs.create({ url: base.toString() }); window.close()
+})
+
+chrome.runtime.onMessage.addListener((message: StatusMessage) => { if (message.type === 'ECOMIND_STATUS_UPDATE' && message.state) setStatus(message.state, message.detail, message) })
 chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes[STORAGE_KEY]?.newValue) refreshPoints(changes[STORAGE_KEY].newValue as ExtensionState) })
 void initialise()

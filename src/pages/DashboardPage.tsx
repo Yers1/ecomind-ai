@@ -1,5 +1,6 @@
-import { ArrowRight, BookmarkSimple, CheckCircle, Eye, Leaf, Medal, Recycle, Sparkle } from '@phosphor-icons/react'
+import { ArrowRight, BookmarkSimple, CheckCircle, Eye, Leaf, Medal, Recycle, Sparkle, Trophy } from '@phosphor-icons/react'
 import { useState } from 'react'
+import { buildLeaderboard, pointsToNextRank, rankFor } from '../../shared/ecoPoints'
 import type { Page } from '../components/AppShell'
 import { KoalaProgress } from '../components/KoalaProgress'
 import { products } from '../data/products'
@@ -9,12 +10,15 @@ const trend = [46, 52, 49, 61, 68, 74]
 const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
 
 export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) {
-  const { points, wishlist, activities, completedActions, completeAction } = useEcoMind()
+  const { points, wishlist, activities, completedActions, completeAction, pointEvents, leaderboardProfile, weeklyPoints } = useEcoMind()
   const [notice, setNotice] = useState<string | null>(null)
   const analysesCompleted = completedActions.filter((item) => item.startsWith('analysis-')).length
   const productsCompared = completedActions.filter((item) => item.startsWith('compare-')).length
   const alternativesSaved = completedActions.filter((item) => item.startsWith('save-')).length
   const completedChallenges = completedActions.filter((item) => item.startsWith('challenge-')).length
+  const leaderboard = buildLeaderboard(leaderboardProfile, pointEvents, 'week', points)
+  const weeklyRank = rankFor(leaderboard, 'week')
+  const nextRank = pointsToNextRank(leaderboard, 'week')
 
   const challenge = (key: string, title: string, detail: string, reward: number) => {
     const isDone = completedActions.includes(key)
@@ -50,6 +54,12 @@ export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) 
             <p>{alternativesSaved > 0 ? 'A saved demo alternative uses more recycled content and has a lower sample carbon estimate. This is not proof of a purchase or real-world savings.' : 'Compare and save a lower-impact alternative to see a directional, non-verified summary.'}</p>
           </div>
           <div className="impact-caveat"><CheckCircle size={18} /><span>No exact real-world savings are claimed. Purchase, use, care and end-of-life behaviour all matter.</span></div>
+        </section>
+        <section className="dashboard-panel leaderboard-preview">
+          <div className="dashboard-panel__heading"><div><h2>Weekly community</h2><p>Meaningful actions—not purchases or product scores.</p></div><Trophy size={23} /></div>
+          {leaderboardProfile.optedIn ? <div className="leaderboard-preview__current"><span>Current demo rank</span><strong>#{weeklyRank}</strong><b>{weeklyPoints} weekly EcoPoints</b><small>{nextRank ? `${nextRank} points to the next position` : 'You lead this demo period'}</small></div> : <div className="leaderboard-preview__current"><span>Optional local participation</span><strong>—</strong><b>Join with a nickname</b><small>No personal or shopping information is shown.</small></div>}
+          <ol aria-label="Top three leaderboard preview">{leaderboard.slice(0, 3).map((entry, index) => <li key={entry.id}><span>#{index + 1}</span><b>{entry.displayName}</b><strong>{entry.weeklyEcoPoints}</strong></li>)}</ol>
+          <button className="button button--secondary" onClick={() => navigate('leaderboard')}>View leaderboard <ArrowRight size={17} /></button>
         </section>
         <section className="dashboard-panel challenge-panel">
           <div className="dashboard-panel__heading"><div><h2>Actions that do not require buying</h2><p>Demo rewards recognise repair, reuse and mindful decisions.</p></div></div>
