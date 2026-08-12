@@ -198,6 +198,7 @@ The complete migration checklist is in [DATA_REPLACEMENT_GUIDE.md](DATA_REPLACEM
 - [Assumptions and limitations](ASSUMPTIONS_AND_LIMITATIONS.md)
 - [Testing checklist](TESTING_CHECKLIST.md)
 - [Demo-data replacement guide](DATA_REPLACEMENT_GUIDE.md)
+- [GitHub publishing details](GITHUB_PUBLISHING.md)
 
 ## Privacy and public repository safety
 
