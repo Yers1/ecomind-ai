@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:extension": "node scripts/build-extension.mjs",
-    "test": "node scripts/test-core.mjs && node scripts/test-engagement.mjs && node scripts/test-parsers.mjs && npm run test:extension",
+    "test": "node scripts/test-core.mjs && node scripts/test-engagement.mjs && node scripts/test-backend-contract.mjs && node scripts/test-parsers.mjs && npm run test:extension",
+    "test:backend": "node scripts/test-backend-contract.mjs",
+    "test:supabase:local": "node scripts/test-supabase-local.mjs",
+    "test:supabase:live": "node scripts/test-supabase-live.mjs",
     "test:engagement": "node scripts/test-engagement.mjs",
     "test:parsers": "node scripts/test-parsers.mjs",
     "test:extension": "npm run build:extension && node scripts/test-extension.mjs",
@@ -16,6 +19,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@supabase/supabase-js": "^2.112.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

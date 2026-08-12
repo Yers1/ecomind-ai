@@ -49,9 +49,9 @@
 - The dashboard trend is labelled sample data.
 - The traffic-light status evaluates product evidence only. It never colours or judges users, ranks or koala levels.
 - Traffic-light thresholds are prototype assumptions shared by the website and extension; green means lower impact under this model, not impact-free or certified.
-- The leaderboard is opt-in and local. Other participants are deterministic fictional sample data.
+- The leaderboard integration is opt-in and uses Supabase only when public configuration is supplied. Production does not substitute fictional participants when the backend is absent or empty.
 - Existing balances migrate to a `legacy-demo-balance` event and remain excluded from weekly rankings.
-- A real multi-user leaderboard requires a privacy-reviewed backend, authentication and abuse prevention. Web and extension local stores are not presented as cross-device synchronization.
+- The repository includes a Supabase schema, RLS and basic abuse prevention, but real multi-user and cross-device operation must not be claimed until migrations, credentials and independent-account tests are completed against a hosted project.
 - The impact summary is directional and does not claim exact verified savings.
 - EcoPoints are demo rewards only.
 - The prototype does not verify purchases, repairs, reuse or no-buy decisions.
@@ -62,7 +62,7 @@
 - Local storage is convenient but is not a secure account system.
 - The demo profile does not authenticate a real person.
 - The web prototype does not request browser-extension permissions.
-- The installable extension uses temporary `activeTab` access. It has no persistent host permissions and therefore cannot inspect a page before the user's activation click.
+- The installable extension uses temporary `activeTab` access and has no persistent retailer host permission, so it cannot inspect a product page before the user's activation click. A backend-configured build adds only the exact Supabase project origin for authentication and point synchronisation.
 - Manual corrections are stored only for the product when the user selects the remember option and are labelled user-provided.
 - Cross-retailer comparison stores a limited extracted record, not webpage HTML.
 - The optional dashboard bridge works while the injected content script is active in the same demo tab. Chrome extension storage is not directly readable by ordinary web pages.

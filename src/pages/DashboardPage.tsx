@@ -1,40 +1,39 @@
 import { ArrowRight, BookmarkSimple, CheckCircle, Eye, Leaf, Medal, Recycle, Sparkle, Trophy } from '@phosphor-icons/react'
 import { useState } from 'react'
-import { buildLeaderboard, pointsToNextRank, rankFor } from '../../shared/ecoPoints'
 import type { Page } from '../components/AppShell'
 import { KoalaProgress } from '../components/KoalaProgress'
 import { products } from '../data/products'
 import { useEcoMind } from '../state/EcoMindContext'
+import { useSupabase } from '../state/SupabaseContext'
 
 const trend = [46, 52, 49, 61, 68, 74]
 const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
 
 export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) {
-  const { points, wishlist, activities, completedActions, completeAction, pointEvents, leaderboardProfile, weeklyPoints } = useEcoMind()
+  const { points, wishlist, activities, completedActions, completeAction } = useEcoMind()
+  const backend = useSupabase()
   const [notice, setNotice] = useState<string | null>(null)
   const analysesCompleted = completedActions.filter((item) => item.startsWith('analysis-')).length
   const productsCompared = completedActions.filter((item) => item.startsWith('compare-')).length
   const alternativesSaved = completedActions.filter((item) => item.startsWith('save-')).length
   const completedChallenges = completedActions.filter((item) => item.startsWith('challenge-')).length
-  const leaderboard = buildLeaderboard(leaderboardProfile, pointEvents, 'week', points)
-  const weeklyRank = rankFor(leaderboard, 'week')
-  const nextRank = pointsToNextRank(leaderboard, 'week')
+  const displayPoints = backend.user && backend.summary ? backend.summary.allTimePoints : points
 
   const challenge = (key: string, title: string, detail: string, reward: number) => {
     const isDone = completedActions.includes(key)
     if (isDone) return
     completeAction(key, title, detail, reward)
-    setNotice(`Completed. +${reward} demo EcoPoints.`)
+    setNotice(backend.user ? 'Action recorded locally. Waiting for backend validation.' : `Saved locally. Sign in to synchronise this +${reward} action.`)
   }
 
   return (
     <div className="dashboard-page page-surface">
       <header className="page-hero container dashboard-header">
-        <div><p className="kicker">Current session · stored locally</p><h1>Small choices, visible progress.</h1><p>These totals reflect actions recorded in this demo profile. Environmental outcomes and savings are not verified.</p></div>
-        <div className="points-total"><Sparkle size={24} weight="fill" /><strong>{points}</strong><span>demo EcoPoints</span></div>
+        <div><p className="kicker">{backend.user ? 'Account progress · validated by the backend' : 'Guest session · stored locally'}</p><h1>Small choices, visible progress.</h1><p>{backend.user ? 'Synced totals include only actions accepted by EcoMind’s server-side rules.' : 'Guest totals remain on this device until you explicitly sign in and import them.'} Environmental outcomes and savings are not verified.</p></div>
+        <div className="points-total"><Sparkle size={24} weight="fill" /><strong>{displayPoints}</strong><span>{backend.user ? 'synced EcoPoints' : 'local EcoPoints'}</span></div>
       </header>
       <div className="container dashboard-layout">
-        <KoalaProgress points={points} />
+        <KoalaProgress points={displayPoints} />
         <section className="dashboard-metrics" aria-label="Current session summary">
           <article><span><Eye size={19} /> Analyses completed</span><strong>{analysesCompleted}</strong><small>Unique demo products analysed</small></article>
           <article><span><Leaf size={19} /> Products compared</span><strong>{productsCompared}</strong><small>Greener alternatives reviewed</small></article>
@@ -57,8 +56,8 @@ export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) 
         </section>
         <section className="dashboard-panel leaderboard-preview">
           <div className="dashboard-panel__heading"><div><h2>Weekly community</h2><p>Meaningful actions—not purchases or product scores.</p></div><Trophy size={23} /></div>
-          {leaderboardProfile.optedIn ? <div className="leaderboard-preview__current"><span>Current demo rank</span><strong>#{weeklyRank}</strong><b>{weeklyPoints} weekly EcoPoints</b><small>{nextRank ? `${nextRank} points to the next position` : 'You lead this demo period'}</small></div> : <div className="leaderboard-preview__current"><span>Optional local participation</span><strong>—</strong><b>Join with a nickname</b><small>No personal or shopping information is shown.</small></div>}
-          <ol aria-label="Top three leaderboard preview">{leaderboard.slice(0, 3).map((entry, index) => <li key={entry.id}><span>#{index + 1}</span><b>{entry.displayName}</b><strong>{entry.weeklyEcoPoints}</strong></li>)}</ol>
+          {backend.user && backend.profile?.optedIn && backend.summary ? <div className="leaderboard-preview__current"><span>Current weekly rank</span><strong>{backend.summary.rank ? `#${backend.summary.rank}` : '—'}</strong><b>{backend.summary.periodPoints} weekly EcoPoints</b><small>{backend.summary.pointsToNextRank ? `${backend.summary.pointsToNextRank} points to the next position` : 'You lead this period'}</small></div> : <div className="leaderboard-preview__current"><span>Optional community participation</span><strong>—</strong><b>{backend.configured ? 'Sign in and choose a nickname' : 'Backend setup required'}</b><small>Guest analysis and local progress remain available.</small></div>}
+          {backend.rankings.length > 0 ? <ol aria-label="Top three leaderboard preview">{backend.rankings.slice(0, 3).map((entry) => <li key={entry.publicId}><span>#{entry.rank}</span><b>{entry.displayName}</b><strong>{entry.ecoPoints}</strong></li>)}</ol> : <p className="leaderboard-preview__empty">No real community members are available yet.</p>}
           <button className="button button--secondary" onClick={() => navigate('leaderboard')}>View leaderboard <ArrowRight size={17} /></button>
         </section>
         <section className="dashboard-panel challenge-panel">

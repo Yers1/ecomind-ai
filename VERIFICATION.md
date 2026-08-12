@@ -65,6 +65,21 @@ The connected Chrome surface was 1536 × 720 and did not expose a viewport-resiz
 - Product extraction, score calculation, manual correction and persistence run locally.
 - Manifest assertions are part of `test:extension`: exactly the three permissions above, no `host_permissions`, and no static `content_scripts` registration.
 
+The statement above describes an unconfigured extension build. A configured Supabase build adds exactly the configured project origin to `host_permissions`; no wildcard retailer permission is added. Hosted authentication, RLS, multi-account and cross-device verification remain pending until the public Supabase configuration and disposable test accounts are supplied.
+
+## Local Supabase verification — 13 August 2026
+
+- `npx supabase db reset` applied `202608130001_real_leaderboard.sql` cleanly.
+- `npx supabase db lint --level warning` reported no schema errors.
+- `npm run test:supabase:local` passed with three independent authenticated sessions.
+- Accounts A and B saw the same public rows and account C remained opted out.
+- Server-side fixed points, duplicate rejection and arbitrary action/point rejection passed.
+- Account B could not read A's private events, edit A's profile, call the private badge helper or directly insert point rows.
+- A second authenticated session restored A's backend total.
+- Opt-out removed A from public results without deleting private points.
+- Deleting C removed its Auth user, profile, point event, challenge completion and backend preference.
+- The hosted Supabase project, passwordless email delivery, website/extension same-account result and production redeployment are not marked verified because no project URL or anon key is configured.
+
 ## Real-retailer validation
 
 - Current public product DOM was inspected in connected Chrome for Amazon US, Amazon UK, H&M US, Nike US and United By Blue (Shopify).

@@ -21,7 +21,7 @@ interface ExtensionBridgeState {
   pointEvents?: PointEvent[]
 }
 
-type RecordEcoAction = { key: string; actionType: EcoPointActionType; title: string; detail: string; source?: EcoPointSource; selfReported?: boolean; points?: number }
+type RecordEcoAction = { key: string; actionType: EcoPointActionType; title: string; detail: string; source?: EcoPointSource; selfReported?: boolean; points?: number; metadata?: Record<string, string> }
 
 interface EcoMindContextValue extends StoredState {
   login: () => void
@@ -81,6 +81,7 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
       const pointEvents = addPointEvent(current.pointEvents, event)
       if (pointEvents === current.pointEvents) return current
       awarded = points
+      window.setTimeout(() => window.dispatchEvent(new CustomEvent('ecomind-point-event', { detail: { event, metadata: input.metadata ?? {} } })), 0)
       const activity: ActivityItem = { id: event.id, title: `${input.title}${event.selfReported ? ' · Self-reported' : ''}`, detail: input.detail, points, date: 'Today', timestamp: event.timestamp }
       return { ...current, authenticated: true, points: current.points + points, completedActions: [...new Set([...current.completedActions, input.key])], activities: [activity, ...current.activities].slice(0, 40), pointEvents }
     })

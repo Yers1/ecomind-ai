@@ -19,9 +19,11 @@ Every analysed result uses the same shared thresholds from `shared/trafficLight.
 
 The status always includes a shape/icon, visible label, score or range, grade where available, confidence and accessible text. It is hidden before analysis. Green means lower impact under the prototype methodology—not environmentally friendly, impact-free or certified.
 
-## Local prototype leaderboard
+## Backend-ready community leaderboard
 
-The optional weekly leaderboard ranks EcoPoints earned through meaningful actions—not purchases, scans, spending or average product scores. It includes period tabs for this week, this month and all time; an opt-in nickname profile; top three and full ranking; weekly challenges; current-user pinning; and deterministic fictional participants labelled as sample data.
+The optional weekly leaderboard ranks server-confirmed EcoPoints earned through meaningful actions—not purchases, scans, spending or average product scores. It includes period tabs for this week, this month and all time; passwordless email OTP; an opt-in nickname profile; top three and full ranking; weekly challenges; current-user pinning; an offline queue; explicit local-progress import; opt-out and account deletion.
+
+Production never fills an empty backend leaderboard with fictional users. Until Supabase is configured and three-account/RLS verification passes, the UI says **Backend setup required** and guest/local product analysis continues to work. Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
 Shared point rules live in `shared/ecoPoints.ts`:
 
@@ -34,7 +36,7 @@ Shared point rules live in `shared/ecoPoints.ts`:
 - analyse or scan: 0;
 - purchase: 0 automatic points.
 
-Each event has a timestamp, source and deduplication key. The dashboard, koala progression, activity history, leaderboard and extension popup derive their summaries from this shared event model. Web local storage and `chrome.storage.local` remain separate browser stores; the Threadly bridge can merge matching action keys while the web app is open, but cross-origin/cross-device synchronization is not claimed.
+Each event has a timestamp, source and deduplication key. Authenticated points are calculated by the protected `award_eco_points` database function; clients cannot submit a point value. Web local storage and `chrome.storage.local` remain separate guest stores. Website and extension sign in separately to the same Supabase account and reconcile through the same backend events.
 
 ## What the extension does
 
@@ -189,6 +191,8 @@ npm run lint
 npm run test:engagement
 npm run test:parsers
 npm run test:extension
+npm run test:backend
+npm run test:supabase:local
 npm run test
 npm run build
 npm run build:extension
@@ -253,10 +257,10 @@ scripts/test-extension.mjs    # Injected-flow and persistence suite
 - Real alternatives come only from products the user analyses and saves; there is no commercial product-search API.
 - The connected development environment cannot automate Chrome's protected `chrome://extensions` page, so final Load unpacked confirmation remains a user-controlled step.
 - The extension is not yet published in the Chrome Web Store.
-- The leaderboard combines the local user's real demo actions with clearly labelled sample participants. A production multi-user leaderboard requires a privacy-reviewed backend and abuse prevention.
-- Web and extension storage cannot remain automatically synchronized on arbitrary retailer origins; both use the same event schema and deduplication keys, but the local stores are technically separate.
+- Hosted multi-user operation remains disabled until a Supabase project is configured and the independent-account/RLS checklist passes. The unconfigured production UI shows no fictional participants.
+- Website and extension guest stores remain technically separate. Cross-device totals come from Supabase only after the user signs into both clients with the same private email account.
 
-The minimal future leaderboard data model is documented in [LEADERBOARD_BACKEND.md](LEADERBOARD_BACKEND.md).
+The backend trust model is documented in [LEADERBOARD_BACKEND.md](LEADERBOARD_BACKEND.md), with deployment steps in [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
 
 See [REAL_RETAILER_TESTING.md](REAL_RETAILER_TESTING.md), [VERIFICATION.md](VERIFICATION.md) and [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md).
 

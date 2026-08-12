@@ -60,7 +60,13 @@
 - [ ] Weekly/monthly/all-time tabs update from the same point events as the dashboard.
 - [ ] Scans and purchases award no points; duplicate and capped actions do not award again.
 - [ ] Weekly challenges can be claimed only once; self-reported items are labelled.
-- [ ] Leaving removes the local leaderboard profile without deleting wishlist or private activity.
+- [ ] Leaving removes the public backend profile from rankings without deleting wishlist or private point events.
+- [ ] Three independent authenticated accounts pass `npm run test:supabase:live`.
+- [ ] Account C remains opted out and absent from public results.
+- [ ] Another account cannot read private events or edit a profile.
+- [ ] Direct point inserts and client-supplied point metadata are rejected.
+- [ ] Web and extension show matching totals after separate OTP sign-in to the same account.
+- [ ] Account deletion removes profile, events, completions and backend preferences.
 - [ ] At 390px, ranking rows become stacked cards with no horizontal overflow.
 - [ ] Impact copy avoids exact verified-savings claims.
 - [ ] Recent activity updates.

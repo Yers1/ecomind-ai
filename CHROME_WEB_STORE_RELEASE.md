@@ -76,7 +76,7 @@ Key features:
 - optional user-labelled corrections stored only on the device;
 - saved extracted fields for comparison across products and retailers;
 - accessible traffic-light explanations whose thresholds are shared with the web app;
-- optional local leaderboard profile and weekly EcoPoints summary;
+- optional Supabase email-OTP sign-in, backend leaderboard profile and weekly EcoPoints summary;
 - no external product-analysis server, advertisements or payment-data access.
 
 Scores are educational prototype estimates, not certifications or lifecycle assessments. Retailer compatibility is best-effort and no retailer partnership is claimed.
@@ -117,8 +117,8 @@ Use the wording shown by the current dashboard, but keep these facts consistent:
 - EcoMind's single purpose is the local analysis and comparison described above.
 - It accesses **website content** only on the active page after the user presses the analysis button.
 - Product-page content is processed locally and is not transmitted to EcoMind or another server.
-- Only extracted comparison fields, manual corrections, preferences, wishlist items, timestamped demo EcoPoint events and the optional leaderboard nickname are stored in `chrome.storage.local`.
-- The leaderboard prototype is local: only the chosen nickname, points and action count are ranked. Product names, scores, browsing history, spending and wishlist contents are not leaderboard fields.
+- Extracted comparison fields, manual corrections, preferences, wishlist items and local point events are stored in `chrome.storage.local`. A configured build also stores the normal Supabase user session, account identifier and explicit sync queue there; it never stores a password or service-role credential.
+- The shared leaderboard receives only approved action type, deduplication key, source and timestamp through the protected RPC. Public rows contain only nickname, koala level, badge, EcoPoints and action count. Product names, scores, browsing history, spending and wishlist contents are not uploaded as leaderboard fields.
 - It does not collect browsing history, cookies, account credentials, orders, cart contents or payment information.
 - It does not sell data, use data for advertising, or allow humans to read page content.
 
@@ -127,6 +127,8 @@ Permission justifications:
 - `activeTab`: temporary access to the page the user explicitly chose to analyse;
 - `scripting`: inject the parser and koala only after that action;
 - `storage`: keep preferences, corrections, wishlist fields and demo EcoPoints on the device.
+
+A backend-configured build also contains one exact host permission for `https://YOUR_PROJECT_REF.supabase.co/*`. This is used only for email OTP, private event synchronisation and the opted-in public leaderboard. Replace the placeholder through build environment variables; do not add an all-sites host permission.
 
 Do not say that no website content is accessed—the extension necessarily reads the selected product page. The accurate distinction is that access is user-activated, local and not transmitted.
 

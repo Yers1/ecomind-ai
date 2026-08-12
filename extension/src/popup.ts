@@ -1,6 +1,7 @@
 import { readExtensionState, STORAGE_KEY, type ExtensionState } from './shared'
-import { buildLeaderboard, getKoalaLevel, periodSummary, rankFor } from '../../shared/ecoPoints'
+import { getKoalaLevel, periodSummary } from '../../shared/ecoPoints'
 import { formatTrafficLightScore, getTrafficLightStatus, trafficLightAccessibleText } from '../../shared/trafficLight'
+import { extensionBackendConfigured, extensionRepository, extensionSupabase, importExtensionProgress, syncExtensionQueue } from './backend'
 
 type PageState = 'checking' | 'ready' | 'possible-product' | 'analysing' | 'success' | 'missing-data' | 'low-confidence' | 'product-changed' | 'unsupported-category' | 'unsupported' | 'restricted' | 'access-error' | 'error'
 
@@ -27,6 +28,19 @@ const trafficResult = document.querySelector<HTMLElement>('#trafficResult')!
 const leaderboardButton = document.querySelector<HTMLButtonElement>('#leaderboardButton')!
 const weeklyRank = document.querySelector<HTMLElement>('#weeklyRank')!
 const weeklySummary = document.querySelector<HTMLElement>('#weeklySummary')!
+const pointsLabel = document.querySelector<HTMLElement>('#pointsLabel')!
+const authStatus = document.querySelector<HTMLElement>('#authStatus')!
+const otpForm = document.querySelector<HTMLFormElement>('#otpForm')!
+const authEmail = document.querySelector<HTMLInputElement>('#authEmail')!
+const authCode = document.querySelector<HTMLInputElement>('#authCode')!
+const otpCodeRow = document.querySelector<HTMLElement>('#otpCodeRow')!
+const otpButton = document.querySelector<HTMLButtonElement>('#otpButton')!
+const signedInControls = document.querySelector<HTMLElement>('#signedInControls')!
+const syncButton = document.querySelector<HTMLButtonElement>('#syncButton')!
+const importButton = document.querySelector<HTMLButtonElement>('#importButton')!
+const signOutButton = document.querySelector<HTMLButtonElement>('#signOutButton')!
+const syncStatus = document.querySelector<HTMLElement>('#syncStatus')!
+let otpSent = false
 
 let activeTab: chrome.tabs.Tab | undefined
 let currentState: PageState = 'checking'
@@ -79,11 +93,20 @@ function pageHint(url?: string) {
   } catch { return { state: 'restricted' as const, retailer: 'Unavailable' } }
 }
 
-function refreshPoints(state: ExtensionState) {
+function writeState(state: ExtensionState) { return new Promise<void>((resolve, reject) => chrome.storage.local.set({ [STORAGE_KEY]: state }, () => chrome.runtime.lastError ? reject(new Error(chrome.runtime.lastError.message)) : resolve())) }
+
+async function refreshPoints(state: ExtensionState) {
   pointsValue.textContent = String(state.points)
-  const week = periodSummary(state.pointEvents, 'week'); const entries = buildLeaderboard(state.leaderboardProfile, state.pointEvents, 'week', state.points); const rank = rankFor(entries, 'week')
-  weeklyRank.textContent = state.leaderboardProfile.optedIn ? `Rank #${rank}` : 'Not joined'
-  weeklySummary.textContent = `${week.points} weekly EcoPoints · ${getKoalaLevel(state.points)}`
+  pointsLabel.textContent = 'Local EcoPoints'
+  const week = periodSummary(state.pointEvents, 'week')
+  if (!extensionBackendConfigured || !extensionSupabase || !extensionRepository) { authStatus.textContent = 'Backend not configured'; otpForm.hidden = true; signedInControls.hidden = true; weeklyRank.textContent = 'Setup required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
+  const { data } = await extensionSupabase.auth.getSession(); const session = data.session
+  if (!session) { authStatus.textContent = 'Not signed in'; otpForm.hidden = false; signedInControls.hidden = true; weeklyRank.textContent = 'Sign in required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
+  if (state.backendAccountId !== session.user.id) { state.backendAccountId = session.user.id; await writeState(state) }
+  authStatus.textContent = session.user.email ?? 'Signed in'; otpForm.hidden = true; signedInControls.hidden = false
+  importButton.hidden = state.importedForAccounts.includes(session.user.id) || !state.pointEvents.some((event) => event.points > 0 && event.actionType !== 'legacy-demo-balance')
+  const synced = await syncExtensionQueue(state)
+  try { const summary = synced.summary ?? await extensionRepository.getSummary('week'); const entries = await extensionRepository.getLeaderboard('week'); const current = entries.find((entry) => entry.isCurrentUser); pointsValue.textContent = String(summary.allTimePoints); pointsLabel.textContent = 'Synced EcoPoints'; weeklyRank.textContent = current?.rank ? `Rank #${current.rank}` : 'Not opted in'; weeklySummary.textContent = `${summary.periodPoints} weekly EcoPoints · ${summary.koalaLevel}`; const pending = synced.state.syncQueue.filter((item) => item.accountId === session.user.id && item.status !== 'synced').length; syncStatus.textContent = pending ? `${pending} action${pending === 1 ? '' : 's'} still need attention.` : 'All eligible extension actions are synchronised.' } catch (error) { syncStatus.textContent = error instanceof Error ? `Backend unavailable: ${error.message}` : 'Backend unavailable.' }
 }
 function getActiveTab(): Promise<chrome.tabs.Tab | undefined> { return new Promise((resolve) => chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => resolve(tabs[0]))) }
 function sendToTab(message: StatusMessage): Promise<StatusMessage | undefined> {
@@ -94,11 +117,10 @@ function sendToTab(message: StatusMessage): Promise<StatusMessage | undefined> {
 }
 
 async function initialise() {
-  refreshPoints(await readExtensionState())
+  await refreshPoints(await readExtensionState())
   activeTab = await getActiveTab()
   const hint = pageHint(activeTab?.url)
   retailerValue.textContent = hint.retailer
-  dashboardButton.disabled = !activeTab?.url || !/ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(activeTab.url)
   if (hint.state === 'restricted') return setStatus('restricted')
   const existing = await sendToTab({ type: 'ECOMIND_GET_STATUS' })
   setStatus(existing?.state ?? hint.state, existing?.detail, existing)
@@ -118,8 +140,10 @@ analyseButton.addEventListener('click', async () => {
 })
 
 dashboardButton.addEventListener('click', () => {
-  if (!activeTab?.id || !activeTab.url) return
-  const dashboardUrl = new URL(activeTab.url); dashboardUrl.hash = '/dashboard'; chrome.tabs.update(activeTab.id, { url: dashboardUrl.toString() }); window.close()
+  if (activeTab?.id && activeTab.url && /ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(activeTab.url)) {
+    const dashboardUrl = new URL(activeTab.url); dashboardUrl.hash = '/dashboard'; chrome.tabs.update(activeTab.id, { url: dashboardUrl.toString() })
+  } else chrome.tabs.create({ url: 'https://ecomind-ai-two.vercel.app/#/dashboard' })
+  window.close()
 })
 
 leaderboardButton.addEventListener('click', () => {
@@ -128,5 +152,9 @@ leaderboardButton.addEventListener('click', () => {
 })
 
 chrome.runtime.onMessage.addListener((message: StatusMessage) => { if (message.type === 'ECOMIND_STATUS_UPDATE' && message.state) setStatus(message.state, message.detail, message) })
-chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes[STORAGE_KEY]?.newValue) refreshPoints(changes[STORAGE_KEY].newValue as ExtensionState) })
+chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes[STORAGE_KEY]?.newValue) void refreshPoints(changes[STORAGE_KEY].newValue as ExtensionState) })
+otpForm.addEventListener('submit', async (event) => { event.preventDefault(); if (!extensionSupabase) return; otpButton.disabled = true; syncStatus.textContent = 'Contacting authentication service…'; try { if (!otpSent) { const { error } = await extensionSupabase.auth.signInWithOtp({ email: authEmail.value.trim(), options: { shouldCreateUser: true } }); if (error) throw error; otpSent = true; otpCodeRow.hidden = false; authEmail.disabled = true; otpButton.textContent = 'Verify and sign in'; syncStatus.textContent = 'Enter the six-digit code from your email.' } else { const { error } = await extensionSupabase.auth.verifyOtp({ email: authEmail.value.trim(), token: authCode.value.trim(), type: 'email' }); if (error) throw error; await refreshPoints(await readExtensionState()) } } catch (error) { syncStatus.textContent = error instanceof Error ? error.message : 'Authentication failed.' } finally { otpButton.disabled = false } })
+syncButton.addEventListener('click', async () => { syncStatus.textContent = 'Synchronising…'; await refreshPoints((await syncExtensionQueue()).state) })
+importButton.addEventListener('click', async () => { const state = await readExtensionState(); const count = await importExtensionProgress(state); syncStatus.textContent = `${count} recognised local actions queued; product and browsing data were not uploaded.`; await refreshPoints((await syncExtensionQueue(state)).state) })
+signOutButton.addEventListener('click', async () => { await extensionSupabase?.auth.signOut(); const state = await readExtensionState(); state.backendAccountId = null; await writeState(state); await refreshPoints(state) })
 void initialise()

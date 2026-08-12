@@ -50,7 +50,7 @@ Select **Record real-product comparison** to add +5 demo EcoPoints.
 
 Open the web dashboard, then the leaderboard.
 
-“EcoPoints reward meaningful actions such as comparing, saving a lower-impact option or recording a repair. Scans and purchases earn nothing. Joining the local leaderboard is optional, fictional participants are labelled as sample data, and traffic-light colours are never used to judge people or rank positions.”
+“EcoPoints reward meaningful actions such as comparing, saving a lower-impact option or recording a repair. Scans and purchases earn nothing. Joining the shared leaderboard is optional, only real opted-in profiles appear, and traffic-light colours are never used to judge people or rank positions.”
 
 ## 2:30–2:45 — Close honestly
 
