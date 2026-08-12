@@ -4,7 +4,7 @@
 
 - The hackathon MVP focuses on T-shirts displayed in a generic online store.
 - Currency is GBP for the demo.
-- A future browser extension would analyse only the active product page after explicit activation.
+- The Manifest V3 extension analyses only the active EcoMind demo product page after explicit activation.
 - The first analysis should work without an account.
 - A local demo profile is enough to show gated saving and EcoPoints behaviour.
 - EcoPoints thresholds are 0-59 for Starter Koala, 60-149 for Eco Explorer and 150 or more for Climate Champion.
@@ -52,6 +52,8 @@
 - Local storage is convenient but is not a secure account system.
 - The demo profile does not authenticate a real person.
 - The web prototype does not request browser-extension permissions.
+- The installable extension uses temporary `activeTab` access and supports only the included EcoMind demo product pages.
+- The optional dashboard bridge works while the injected content script is active in the same demo tab. Chrome extension storage is not directly readable by ordinary web pages.
 - A production extension needs minimum permissions, retention controls, deletion controls, security review and a clear privacy notice.
 - The repository contains no secrets or personal user data.
 

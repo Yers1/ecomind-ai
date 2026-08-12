@@ -2,6 +2,8 @@
 
 EcoMind AI is a polished hackathon prototype that helps young online shoppers understand the environmental impact of clothing products while they shop.
 
+**Live web app:** [https://ecomind-ai-two.vercel.app](https://ecomind-ai-two.vercel.app)
+
 Built by Team 17 for the Teens in AI AI4Good Incubator 2026, addressing SDG 13: Climate Action.
 
 > Prototype notice: every product, source label, score, reward and environmental value in this repository is sample or estimated data. EcoMind scores are educational estimates, not certifications.
@@ -12,7 +14,7 @@ Young shoppers often see incomplete and inconsistent sustainability information.
 
 ## The solution
 
-EcoMind simulates a privacy-conscious browser extension inside a generic online clothing store. After the shopper activates the koala widget, EcoMind:
+EcoMind includes both a privacy-conscious browser-extension simulation inside the web app and a real installable Manifest V3 extension for the same generic online clothing demo. After the shopper activates the koala widget, EcoMind:
 
 - structures the available product listing;
 - calculates one transparent Green Score;
@@ -37,6 +39,7 @@ No survey results have been invented. The interface uses the placeholder: `Surve
 - Generic online-store page, not Amazon branding.
 - Local TypeScript product data. No scraping, retailer API or external database.
 - Simulated browser-extension widget in a responsive React app.
+- Installable Chrome extension built with Manifest V3 for the included demo product pages.
 - Local storage instead of a backend or authentication service.
 
 ## Main journey
@@ -79,6 +82,77 @@ Production build:
 npm run build
 npm run preview
 ```
+
+## Install the Chrome extension
+
+The extension analyses only the Amazon-style demo product pages in this project. It does not claim full compatibility with Amazon or other retailers.
+
+1. Run the web application:
+
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+2. Run the production build for the extension:
+
+   ```bash
+   npm run build:extension
+   ```
+
+   Optional automated integration check:
+
+   ```bash
+   npm run test:extension
+   ```
+
+3. Open `chrome://extensions` in Chrome.
+4. Enable **Developer mode**.
+5. Select **Load unpacked**.
+6. Choose the generated `dist-extension` directory inside this project.
+7. Open the local web app and choose **Product demo**, or open [the deployed demo](https://ecomind-ai-two.vercel.app/#/demo).
+8. Open the EcoMind AI extension popup and select **Analyse this product**.
+
+The popup starts the analysis. Only then does `chrome.scripting` inject `content.js` into the active demo page. The content script reads the visible demo product name, price, description and material information, calculates the score locally, then injects the collapsed koala and drawer through Shadow DOM.
+
+### Extension build output
+
+```text
+dist-extension/
+├── manifest.json
+├── background.js
+├── content.js
+├── popup.html
+├── popup.css
+├── popup.js
+└── icons/
+```
+
+`dist-extension` is generated and intentionally excluded from Git. Build it locally before using **Load unpacked**.
+
+### Extension permissions
+
+The Manifest V3 extension requests only:
+
+- `activeTab`: temporary access to the page the user explicitly activates;
+- `scripting`: inject the content script after the user selects **Analyse this product**;
+- `storage`: save demo EcoPoints, wishlist items and preferences locally.
+
+It requests no browsing-history permission, no broad host permission and no payment access. It sends no product information to an external server.
+
+### Extension states
+
+The popup and content script implement:
+
+- Ready to analyse;
+- Analysing;
+- Successful analysis;
+- Missing product data;
+- Low confidence;
+- Unsupported page;
+- Analysis error.
+
+Chrome extension state is stored under `ecomindExtensionState` in `chrome.storage.local`. When the injected extension and web dashboard share the same open demo tab, the content script also exposes a narrow in-page event bridge so the React dashboard can mirror the saved demo points and wishlist where technically practical.
 
 ## Green Score methodology
 
@@ -136,6 +210,9 @@ EcoMind-AI/
 │   ├── state/EcoMindContext.tsx # Local profile, EcoPoints and wishlist state
 │   ├── App.tsx                  # Hash-based prototype navigation
 │   └── styles.css               # Design system, states and responsive layouts
+├── extension/                   # Manifest V3 source, popup, worker, content script and icons
+├── scripts/build-extension.mjs  # Reproducible dist-extension build
+├── scripts/test-extension.mjs   # Injection, score and storage integration check
 ├── ASSUMPTIONS_AND_LIMITATIONS.md
 ├── DATA_REPLACEMENT_GUIDE.md
 ├── DEMO_SCRIPT.md
@@ -163,7 +240,8 @@ Use the browser developer tools to clear this key and reset the prototype.
 - The alternative engine follows local `alternativeProductId` links.
 - Estimated impact is directional and does not claim verified real-world savings.
 - Product images were generated for the prototype and do not represent real products.
-- No browser extension package is included in this web MVP.
+- The Manifest V3 extension is a demo build and is not published in the Chrome Web Store.
+- The extension intentionally supports only EcoMind's included demo product pages, not real Amazon pages.
 
 See [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md) for the full list.
 
@@ -171,7 +249,7 @@ See [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md) for the ful
 
 - Review the scoring framework with textile lifecycle experts.
 - Test comprehension, usefulness and tone with users aged 15-24.
-- Connect consented product-page extraction to a minimal-permission browser extension.
+- Validate the minimal-permission extension in a controlled pilot before supporting any additional sites.
 - Integrate licensed textile and lifecycle datasets with provenance and versioning.
 - Add country-specific repair, resale and recycling guidance.
 - Build a confidence model from field coverage, source quality and freshness.
@@ -197,6 +275,7 @@ The complete migration checklist is in [DATA_REPLACEMENT_GUIDE.md](DATA_REPLACEM
 - [2-3 minute demo script](DEMO_SCRIPT.md)
 - [Assumptions and limitations](ASSUMPTIONS_AND_LIMITATIONS.md)
 - [Testing checklist](TESTING_CHECKLIST.md)
+- [Verification record](VERIFICATION.md)
 - [Demo-data replacement guide](DATA_REPLACEMENT_GUIDE.md)
 - [GitHub publishing details](GITHUB_PUBLISHING.md)
 

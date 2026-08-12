@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EcoMind AI</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="brand">
+        <div class="koala" role="img" aria-label="EcoMind koala">
+          <span class="ear ear-left"></span><span class="ear ear-right"></span>
+          <span class="face"><i class="eye eye-left"></i><i class="eye eye-right"></i><i class="nose"></i></span>
+          <span class="leaf"></span>
+        </div>
+        <div><strong>EcoMind AI</strong><span>Climate clarity while you shop</span></div>
+      </header>
+
+      <section class="status-card" aria-live="polite">
+        <span class="status-label">Current page</span>
+        <div class="status-line"><i id="statusIcon" class="status-icon"></i><strong id="statusText">Checking page...</strong></div>
+        <p id="statusDetail">EcoMind has not read this page.</p>
+      </section>
+
+      <button id="analyseButton" class="primary-button" type="button" disabled>Analyse this product</button>
+
+      <div class="summary-row">
+        <div class="points"><span>Demo EcoPoints</span><strong id="pointsValue">35</strong></div>
+        <button id="dashboardButton" class="dashboard-button" type="button">Open dashboard <span aria-hidden="true">→</span></button>
+      </div>
+
+      <footer>
+        <p><strong>Private by design.</strong> Analysis starts only when you click. Product details stay on this device and are not sent to a server.</p>
+        <small>Scores are estimates, not certifications.</small>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

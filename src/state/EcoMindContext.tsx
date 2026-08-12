@@ -9,6 +9,13 @@ interface StoredState {
   activities: ActivityItem[]
 }
 
+interface ExtensionBridgeState {
+  points?: number
+  wishlist?: Array<{ id: string }>
+  completedActions?: string[]
+  activities?: ActivityItem[]
+}
+
 interface EcoMindContextValue extends StoredState {
   login: () => void
   logout: () => void
@@ -51,6 +58,34 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [state])
+
+  useEffect(() => {
+    const syncExtensionState = () => {
+      const raw = document.documentElement.dataset.ecomindExtensionState
+      if (!raw) return
+      try {
+        const extension = JSON.parse(raw) as ExtensionBridgeState
+        setState((current) => {
+          const extensionIds = (extension.wishlist ?? []).map((item) => item.id)
+          const activityMap = new Map<string, ActivityItem>()
+          ;[...(extension.activities ?? []), ...current.activities].forEach((activity) => activityMap.set(activity.id, activity))
+          return {
+            ...current,
+            authenticated: true,
+            points: Math.max(current.points, extension.points ?? 0),
+            wishlist: [...new Set([...current.wishlist, ...extensionIds])],
+            completedActions: [...new Set([...current.completedActions, ...(extension.completedActions ?? [])])],
+            activities: [...activityMap.values()].slice(0, 8),
+          }
+        })
+      } catch {
+        // The bridge is optional. Ignore malformed external state and retain web state.
+      }
+    }
+    document.addEventListener('ecomind-extension-storage', syncExtensionState)
+    syncExtensionState()
+    return () => document.removeEventListener('ecomind-extension-storage', syncExtensionState)
+  }, [])
 
   const login = useCallback(() => setState((current) => ({ ...current, authenticated: true })), [])
   const logout = useCallback(() => setState((current) => ({ ...current, authenticated: false })), [])

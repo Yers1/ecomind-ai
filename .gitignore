@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-extension/
 .vite/
 *.local
 *.log
@@ -8,3 +9,4 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+.vercel

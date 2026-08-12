@@ -68,7 +68,24 @@ export function StoreDemoPage() {
         })}
       </div>
       <div className="store-breadcrumb container">Clothing <span>/</span> T-shirts <span>/</span> {product.shortName}</div>
-      <section className="product-page container" key={product.id}>
+      <section
+        className="product-page container"
+        key={product.id}
+        data-ecomind-demo-product="true"
+        data-product-id={product.id}
+        data-currency={product.currency}
+        data-listing-text={product.listingText}
+        data-materials={JSON.stringify(product.materials)}
+        data-recycled-content={product.recycledContentPercentage === null ? 'null' : String(product.recycledContentPercentage)}
+        data-carbon-kg={product.estimatedCarbonKg === null ? 'null' : String(product.estimatedCarbonKg)}
+        data-carbon-value-type={product.carbonValueType}
+        data-packaging={product.packagingType ?? ''}
+        data-durability={String(product.durabilityRating)}
+        data-circularity={String(product.circularityRating)}
+        data-source-labels={JSON.stringify(product.sourceLabels)}
+        data-missing-fields={JSON.stringify(product.missingFields)}
+        data-alternative-product-id={product.alternativeProductId ?? ''}
+      >
         <div className="product-gallery">
           <div className="product-gallery__main"><img src={product.image} alt={`${product.productName} in ${product.color}`} /></div>
           <div className="product-gallery__note"><ShieldCheck size={18} /> Product image generated for this local demo</div>

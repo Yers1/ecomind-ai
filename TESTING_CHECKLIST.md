@@ -94,3 +94,25 @@
 - [ ] Scores are described as estimates, not certifications.
 - [ ] People information is separate from the Green Score.
 - [ ] The public repository does not include the original brief, attachments or local filesystem paths.
+
+## Chrome extension
+
+- [ ] `npm run build:extension` creates `dist-extension`.
+- [ ] `npm run test:extension` passes the production content-script injection and persistence checks.
+- [ ] `dist-extension/manifest.json` parses and declares Manifest V3.
+- [ ] Chrome accepts `dist-extension` through **Load unpacked** without manifest errors.
+- [ ] The manifest requests only `activeTab`, `scripting` and `storage`.
+- [ ] No `history`, broad host or payment-related permission is requested.
+- [ ] The popup reports unsupported pages without injecting the widget.
+- [ ] The demo page initially contains no extension widget.
+- [ ] Selecting **Analyse this product** injects `content.js` through `chrome.scripting`.
+- [ ] The injected widget is rendered inside a Shadow DOM root.
+- [ ] Product name, price, description and material text come from the visible demo page.
+- [ ] The extension Green Score matches the web scoring formula.
+- [ ] Missing-data and low-confidence states are visible for the cotton demo.
+- [ ] Saving adds an item to the extension wishlist.
+- [ ] Choosing the alternative awards demo EcoPoints only once.
+- [ ] Wishlist and points remain in `chrome.storage.local` after refreshing the demo page.
+- [ ] Reopening the popup shows the persisted EcoPoints total.
+- [ ] The dashboard mirrors extension state when the content-script bridge is active.
+- [ ] No product data is sent over the network by the extension.

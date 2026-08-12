@@ -1,28 +1,19 @@
-# GitHub publishing details
+# GitHub and deployment details
 
-The local repository is initialised on the `main` branch and contains two public-safe commits. The working tree should be clean before publishing.
+## Public repository
 
-## Recommended repository metadata
+- Repository: [Yers1/ecomind-ai](https://github.com/Yers1/ecomind-ai)
+- Visibility: Public
+- Default branch: `main`
+- Licence: MIT
 
-**Repository name**
-
-```text
-ecomind-ai-hackathon-2026
-```
-
-**Description**
+Suggested description:
 
 ```text
-Hackathon-ready React prototype giving young online shoppers transparent clothing Green Scores, confidence, greener alternatives and behaviour-first EcoPoints. Team 17, Teens in AI AI4Good Incubator 2026.
+Local-first EcoMind AI prototype with an installable Manifest V3 Chrome extension, transparent clothing Green Scores, greener alternatives, wishlist and demo EcoPoints.
 ```
 
-**Visibility**
-
-```text
-Public
-```
-
-**Topics**
+Suggested topics:
 
 ```text
 ecomind-ai
@@ -34,74 +25,19 @@ react
 typescript
 vite
 sustainability
+manifest-v3
+chrome-extension
 hackathon
-accessibility
-browser-extension-prototype
 ```
 
-**Licence**
+## Production deployment
 
-```text
-MIT
-```
+- Provider: Vercel
+- Production URL: [ecomind-ai-two.vercel.app](https://ecomind-ai-two.vercel.app)
+- Deployment source: GitHub `main`
+
+Vercel is connected to the GitHub repository. A push to `main` triggers the production deployment. The generated Chrome extension is intentionally not hosted or distributed as a Chrome Web Store package; build `dist-extension` locally with `npm run build:extension` and load it unpacked.
 
 ## Public-safety status
 
-The prepared repository has been checked for:
-
-- credential-shaped strings;
-- local user and Codex paths;
-- the original pasted brief or attachment;
-- environment files;
-- retailer customer data;
-- private survey responses;
-- runtime API dependencies.
-
-None were found. The product images are original generated demo assets, and all environmental data is labelled as sample or estimated.
-
-## Publish through github.com
-
-1. Open `https://github.com/new` while signed in.
-2. Enter the recommended repository name and description.
-3. Select **Public**.
-4. Do not add a README, `.gitignore` or licence on GitHub because they already exist locally.
-5. Create the repository.
-6. From this project folder, replace `YOUR_USERNAME` and run:
-
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/ecomind-ai-hackathon-2026.git
-git push -u origin main
-```
-
-7. Add the topics from the list above in the repository settings.
-
-## Publish with GitHub CLI
-
-If GitHub CLI is installed and authenticated:
-
-```bash
-gh repo create ecomind-ai-hackathon-2026 \
-  --public \
-  --source=. \
-  --remote=origin \
-  --push \
-  --description "Hackathon-ready React prototype giving young online shoppers transparent clothing Green Scores, confidence, greener alternatives and behaviour-first EcoPoints. Team 17, Teens in AI AI4Good Incubator 2026."
-```
-
-Then add topics:
-
-```bash
-gh repo edit --add-topic ecomind-ai,climate-action,sdg13,ai4good,teens-in-ai,react,typescript,vite,sustainability,hackathon,accessibility,browser-extension-prototype
-```
-
-## Suggested About text
-
-```text
-EcoMind AI helps young shoppers understand the environmental impact of clothing with a transparent Green Score, visible confidence and lower-impact alternatives. Built for Teens in AI AI4Good Incubator 2026.
-```
-
-## Suggested first release
-
-- Tag: `v1.0.0-hackathon`
-- Title: `EcoMind AI hackathon prototype`
-- Notes: `Working local-first MVP with the extension-style koala widget, deterministic Green Score, comparison, wishlist, EcoPoints, dashboard, methodology and privacy views.`
+The repository contains no API keys, credentials, retailer customer data, payment data, private survey responses or runtime product-data uploads. Product images are generated demo assets, and environmental values are labelled sample, demo, listed-demo or estimated.
