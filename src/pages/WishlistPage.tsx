@@ -10,13 +10,16 @@ import { useEcoMind } from '../state/EcoMindContext'
 import type { Product } from '../types'
 
 export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
-  const { wishlist, removeProduct, authenticated } = useEcoMind()
+  const { wishlist, removeProduct, authenticated, recordComparison, saveProduct } = useEcoMind()
   const savedProducts = wishlist.map(getProduct)
   const [comparison, setComparison] = useState<{ current: Product; alternative: Product } | null>(null)
 
   const compareFor = (product: Product) => {
     const alternative = product.alternativeProductId ? getProduct(product.alternativeProductId) : products.find((item) => item.id !== product.id)
-    if (alternative) setComparison({ current: product, alternative })
+    if (alternative) {
+      recordComparison(product.id, alternative.productName)
+      setComparison({ current: product, alternative })
+    }
   }
 
   return (
@@ -52,7 +55,7 @@ export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
           </div>
         )}
       </div>
-      {comparison && <ProductComparison current={comparison.current} alternative={comparison.alternative} open onClose={() => setComparison(null)} onChoose={() => setComparison(null)} />}
+      {comparison && <ProductComparison current={comparison.current} alternative={comparison.alternative} open onClose={() => setComparison(null)} onSave={() => { saveProduct(comparison.alternative.id, comparison.alternative.productName, true); setComparison(null) }} onView={() => { sessionStorage.setItem('ecomind-demo-product-to-view', comparison.alternative.id); setComparison(null); navigate('demo') }} />}
     </div>
   )
 }

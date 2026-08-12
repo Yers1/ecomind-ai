@@ -1,121 +1,99 @@
 # EcoMind AI
 
-EcoMind AI is a polished hackathon prototype that helps young online shoppers understand the environmental impact of clothing products while they shop.
+EcoMind AI is a privacy-conscious browser-extension prototype that helps young shoppers understand the estimated environmental impact of clothing while they shop. The website provides the landing page, current-session dashboard, methodology, privacy information and the fictional Threadly demo store; the Manifest V3 extension is the final product format.
 
 **Live web app:** [https://ecomind-ai-two.vercel.app](https://ecomind-ai-two.vercel.app)
 
 Built by Team 17 for the Teens in AI AI4Good Incubator 2026, addressing SDG 13: Climate Action.
 
-> Prototype notice: every product, source label, score, reward and environmental value in this repository is sample or estimated data. EcoMind scores are educational estimates, not certifications.
+> Every product, environmental value, source label and reward is fictional sample or prototype-estimate data. Green Scores are educational estimates, not certifications or verified savings.
 
-## The problem
+## Product experience
 
-Young shoppers often see incomplete and inconsistent sustainability information. Material composition, recycled content, packaging, carbon footprint and product life are difficult to compare during a purchase decision.
+EcoMind analyses only after the user activates it. On an included Threadly demo product page it:
 
-## The solution
+- reads the visible name, price, description and material information;
+- simulates AI-assisted extraction into a transparent structured record;
+- calculates a deterministic Green Score using the published formula;
+- separates score confidence from the score and shows missing information;
+- compares a lower-impact option from the local sample dataset;
+- stores the wishlist, preferences and demo EcoPoints locally.
 
-EcoMind includes both a privacy-conscious browser-extension simulation inside the web app and a real installable Manifest V3 extension for the same generic online clothing demo. After the shopper activates the koala widget, EcoMind:
+The project does not scrape or claim compatibility with Amazon or other real retailers. It sends no product information to an external server and collects no payment information.
 
-- structures the available product listing;
-- calculates one transparent Green Score;
-- separates score confidence from the score itself;
-- shows sources and missing information;
-- suggests an affordable, lower-impact local alternative;
-- rewards meaningful actions through demo EcoPoints;
-- saves wishlist and progress in browser local storage.
+## Website and extension
 
-The first product analysis works without an account. A demo profile is requested only when the shopper saves progress or collects EcoPoints.
+- **Website:** public story, fictional Threadly store, in-page simulation, wishlist, dashboard, methodology and privacy pages. It uses `localStorage` for the demo profile.
+- **Chrome extension:** real Manifest V3 popup and on-demand injected content script. It uses `chrome.storage.local` and only supports pages carrying the explicit EcoMind demo marker.
+- **Shared core:** both builds import the same local product records, score formula, confidence logic, source metadata and product terminology from `shared/ecomind.ts`.
 
-## Target users
+The web dashboard can mirror extension actions through a narrow same-tab event bridge while the extension is injected. Chrome extension storage remains separate from ordinary web storage.
 
-Young people aged 15-24 who shop online, including frequent and occasional shoppers and people who do or do not currently consider environmental impact.
+## Main two-minute journey
 
-No survey results have been invented. The interface uses the placeholder: `Survey finding to be added after analysis.`
+1. Open the Threadly demo and select a product.
+2. Activate EcoMind from the extension popup or the in-page simulation.
+3. Wait for the local analysis and open the koala drawer.
+4. Expand **See what AI extracted**.
+5. Review the score, confidence, missing data and source labels.
+6. Select **Compare greener alternative**.
+7. Save the lower-impact option or view its demo product page.
+8. Open the dashboard to see current-session actions and demo EcoPoints.
 
-## MVP scope
+## Requirements
 
-- Clothing and fabric products only.
-- Three local T-shirt samples: polyester, cotton and recycled/lower-impact blend.
-- Generic online-store page, not Amazon branding.
-- Local TypeScript product data. No scraping, retailer API or external database.
-- Simulated browser-extension widget in a responsive React app.
-- Installable Chrome extension built with Manifest V3 for the included demo product pages.
-- Local storage instead of a backend or authentication service.
+- Node.js 20 or later
+- npm
+- Google Chrome for the installable extension
 
-## Main journey
-
-1. Open the product demo.
-2. Select a local sample T-shirt.
-3. Activate the collapsed koala widget.
-4. See the analysis loading state and expanded score drawer.
-5. Inspect the score breakdown, confidence, sources and missing fields.
-6. Compare a lower-impact option side by side.
-7. Save or choose the alternative.
-8. Continue with a local demo profile only at this point.
-9. Earn demo EcoPoints and unlock a koala level.
-10. View the dashboard and wishlist.
-
-## Tech stack
-
-- React 19
-- TypeScript
-- Vite
-- Maintainable custom CSS with semantic design tokens
-- Phosphor Icons
-- Browser local storage
-- No paid APIs, environment variables, database or runtime network requests
-
-## Run locally
-
-Requirements: Node.js 20 or later and npm.
+## Run the website locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL shown by Vite, normally `http://localhost:5173`.
+Open the URL printed by Vite, normally `http://localhost:5173`, then select **Try the product demo**.
 
-Production build:
+Create and preview the web production build:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Install the Chrome extension
+## Build and install the Chrome extension
 
-The extension analyses only the Amazon-style demo product pages in this project. It does not claim full compatibility with Amazon or other retailers.
-
-1. Run the web application:
+1. Start the web application:
 
    ```bash
    npm install
    npm run dev
    ```
 
-2. Run the production build for the extension:
+2. In a second terminal, create the production extension:
 
    ```bash
    npm run build:extension
    ```
 
-   Optional automated integration check:
+3. Open `chrome://extensions` in Chrome.
+4. Enable **Developer mode** in the top-right corner.
+5. Select **Load unpacked**.
+6. Choose this generated directory, not the `extension` source directory:
 
-   ```bash
-   npm run test:extension
+   ```text
+   <project-folder>\dist-extension
    ```
 
-3. Open `chrome://extensions` in Chrome.
-4. Enable **Developer mode**.
-5. Select **Load unpacked**.
-6. Choose the generated `dist-extension` directory inside this project.
-7. Open the local web app and choose **Product demo**, or open [the deployed demo](https://ecomind-ai-two.vercel.app/#/demo).
-8. Open the EcoMind AI extension popup and select **Analyse this product**.
+7. Open `http://localhost:5173/#/demo` or the [deployed Threadly demo](https://ecomind-ai-two.vercel.app/#/demo).
+8. Select the EcoMind AI toolbar icon. If it is hidden, pin it from Chrome's Extensions menu.
+9. Select **Analyse this product**.
+10. Click the injected koala to open the analysis drawer.
 
-The popup starts the analysis. Only then does `chrome.scripting` inject `content.js` into the active demo page. The content script reads the visible demo product name, price, description and material information, calculates the score locally, then injects the collapsed koala and drawer through Shadow DOM.
+After source changes, run `npm run build:extension`, then select the extension's **Reload** icon on `chrome://extensions` and refresh the demo page.
 
-### Extension build output
+The ready-to-load output contains:
 
 ```text
 dist-extension/
@@ -128,161 +106,129 @@ dist-extension/
 └── icons/
 ```
 
-`dist-extension` is generated and intentionally excluded from Git. Build it locally before using **Load unpacked**.
+`dist-extension` is generated and excluded from Git.
 
-### Extension permissions
+### Minimum permissions
 
-The Manifest V3 extension requests only:
+The extension requests only:
 
-- `activeTab`: temporary access to the page the user explicitly activates;
-- `scripting`: inject the content script after the user selects **Analyse this product**;
-- `storage`: save demo EcoPoints, wishlist items and preferences locally.
+- `activeTab` — temporary access to the tab the user activates;
+- `scripting` — inject `content.js` after **Analyse this product** is selected;
+- `storage` — keep local EcoPoints, wishlist items and preferences.
 
-It requests no browsing-history permission, no broad host permission and no payment access. It sends no product information to an external server.
+It declares no broad host permissions and requests no `history`, payment, cookie or external-network access. The manifest does not register an always-on content script.
 
 ### Extension states
 
-The popup and content script implement:
+The popup/content experience covers Ready to analyse, Analysing, Successful analysis, Missing product data, Low confidence, Unsupported page and Analysis error.
 
-- Ready to analyse;
-- Analysing;
-- Successful analysis;
-- Missing product data;
-- Low confidence;
-- Unsupported page;
-- Analysis error.
+Extension state is stored under `ecomindExtensionStateV2` in `chrome.storage.local`.
 
-Chrome extension state is stored under `ecomindExtensionState` in `chrome.storage.local`. When the injected extension and web dashboard share the same open demo tab, the content script also exposes a narrow in-page event bridge so the React dashboard can mirror the saved demo points and wishlist where technically practical.
+## AI-assisted extraction
 
-## Green Score methodology
+No live AI model or API is used. Local deterministic logic simulates the role an AI system could perform: extract listing text into named fields, surface uncertainty, flag absent fields and explain the result. The drawer lets the user inspect the exact listing text and resulting structure.
 
-The deterministic formula is:
+The extraction never fills an absent environmental fact. The published formula—not an AI model—calculates the numeric score.
+
+## Green Score and confidence
 
 ```text
-Green Score = Material impact x 35%
-            + Estimated carbon footprint x 25%
-            + Recycled content x 20%
-            + Durability and circularity x 10%
-            + Packaging x 10%
+Green Score = Material impact × 35%
+            + Estimated carbon × 25%
+            + Recycled content × 20%
+            + Durability and circularity × 10%
+            + Packaging × 10%
 ```
 
-Each factor is normalised from 0 to 100, multiplied by its fixed weight and rounded to the nearest whole number. The implementation lives in [`src/lib/scoring.ts`](src/lib/scoring.ts).
+Factor inputs are normalised from 0–100 and combined with fixed prototype weights. Complete records return an exact demo score. For incomplete records, unknown factors remain `null`; they are never silently converted to confirmed zero. The UI shows **Not disclosed**, lowers confidence and presents a provisional `~score` with a possible range calculated from the known factors.
 
-The current demo uses:
+Confidence is deterministic and separate from the score:
 
-- fixed sample impact factors for polyester, cotton, recycled cotton and lyocell;
-- a simple carbon scale: `100 - estimated kg CO2e x 12`, clamped to 0-100;
-- the disclosed recycled percentage, or zero when it is not disclosed;
-- the average of demo durability and circularity ratings;
-- fixed sample factors for each packaging type.
+- **High:** all required score inputs are present.
+- **Medium:** one relevant field is absent or important listing context is limited.
+- **Low:** two or more required score inputs are absent.
 
-Missing information is displayed as `Not disclosed`. Confidence is a separate label:
+The weights and factor values are prototype assumptions, have not been scientifically validated and may overlap—for example, material and carbon impacts. Expert review and real data provenance are required before any real-world release. People/labour information stays outside the environmental score.
 
-- High: most relevant fields are present.
-- Medium: some values are missing or estimated.
-- Low: important product details are unavailable.
+## EcoPoints integrity
 
-Labour and people information is shown separately and does not affect the environmental score.
+New profiles start at 0. Demo points are awarded once per action:
 
-## Where AI is used
+- compare a greener alternative: **+5**;
+- save a lower-impact option: **+5**;
+- self-report a repair/reuse challenge: **+20**;
+- self-report “I do not need this item”: **+25**.
 
-The prototype does not call a live AI model. It simulates AI functions with deterministic local logic:
+Analysing, saving a higher-impact item, or clicking a store purchase button earns no points. Koala levels are Starter at 0–14, Eco Explorer at 15–39 and Climate Champion at 40+.
 
-- extracting material information from listing text;
-- converting listing details into structured fields;
-- flagging missing or uncertain values;
-- producing a short plain-language score explanation;
-- selecting a relevant alternative from the local dataset;
-- presenting personalised education and challenges.
+Web demo state is stored under `ecomind-ai-demo-state-v2` in `localStorage`. Clear that key to reset the web profile. Extension state can be cleared from the extension's details page under site data/storage.
 
-AI does not calculate the numeric Green Score. The published formula does.
+## Survey findings
+
+No survey results are displayed because verified findings have not been supplied. Add reviewed results only in `src/data/surveyInsights.ts` using:
+
+```ts
+type SurveyInsight = {
+  statement: string
+  evidence: string
+  questionNumber?: number
+  respondentCount?: number
+}
+```
+
+Append verified objects to `surveyInsights`. The landing-page research section renders only when the array is non-empty. Do not add inferred statistics, paraphrases without evidence or personally identifiable responses.
+
+## Commands and verification
+
+```bash
+npm install
+npm run build
+npm run build:extension
+npm run lint
+npm run test
+```
+
+`npm run test` checks the shared scoring rules and extension injection, statuses, comparison rewards, wishlist persistence and duplicate-reward prevention.
 
 ## Project structure
 
 ```text
 EcoMind-AI/
-├── public/products/             # Original generated demo catalog images
+├── public/products/                 # Fictional demo product images
+├── shared/ecomind.ts                # Shared records, score and confidence logic
 ├── src/
-│   ├── components/              # Widget, drawer, comparison, mascot and shared UI
-│   ├── data/products.ts         # Structured local product dataset
-│   ├── lib/scoring.ts           # Deterministic score calculation
-│   ├── pages/                   # Landing, store, dashboard, wishlist and policy pages
-│   ├── state/EcoMindContext.tsx # Local profile, EcoPoints and wishlist state
-│   ├── App.tsx                  # Hash-based prototype navigation
-│   └── styles.css               # Design system, states and responsive layouts
-├── extension/                   # Manifest V3 source, popup, worker, content script and icons
-├── scripts/build-extension.mjs  # Reproducible dist-extension build
-├── scripts/test-extension.mjs   # Injection, score and storage integration check
-├── ASSUMPTIONS_AND_LIMITATIONS.md
-├── DATA_REPLACEMENT_GUIDE.md
-├── DEMO_SCRIPT.md
-└── TESTING_CHECKLIST.md
+│   ├── components/                  # Widget, drawer, comparison and shared UI
+│   ├── data/                        # Web product adapter and survey insert point
+│   ├── hooks/useAccessibleDialog.ts # Focus trap, Escape and focus restoration
+│   ├── pages/                       # Landing, Threadly, dashboard and policy pages
+│   └── state/EcoMindContext.tsx     # Web demo state and extension bridge
+├── extension/                       # Existing Manifest V3 source and icons
+├── scripts/build-extension.mjs      # Reproducible extension build
+├── scripts/test-core.mjs            # Shared score tests
+└── scripts/test-extension.mjs       # Content-script integration tests
 ```
 
-## Local storage
+## Current limitations and future requirements
 
-The key `ecomind-ai-demo-state-v1` stores:
+- All three products, environmental inputs and images are fictional demo content.
+- Carbon and factor values are not lifecycle assessments; no savings are verified.
+- Alternative matching follows explicit local links rather than a production recommender.
+- The demo profile is local-only and is not a secure account.
+- The extension is not published in the Chrome Web Store and supports only the included Threadly pages.
+- Automated checks validate the manifest and production bundle, but the final **Load unpacked** confirmation must be performed interactively in the user's Chrome.
+- A production version needs reviewed lifecycle/environmental-footprint and textile data, licensed retailer information, provenance and versioning, independent methodology review, correction workflows, accessibility research, privacy/security review and user testing.
 
-- demo sign-in state;
-- EcoPoints;
-- saved product IDs;
-- completed action IDs;
-- recent activity.
-
-Use the browser developer tools to clear this key and reset the prototype.
-
-## Current limitations
-
-- The data model and scoring factors have not been independently reviewed.
-- Product carbon values are sample or estimated data, not lifecycle assessments.
-- Demo confidence is assigned in the local dataset rather than derived from a validated completeness model.
-- The profile is simulated and has no security boundary.
-- The alternative engine follows local `alternativeProductId` links.
-- Estimated impact is directional and does not claim verified real-world savings.
-- Product images were generated for the prototype and do not represent real products.
-- The Manifest V3 extension is a demo build and is not published in the Chrome Web Store.
-- The extension intentionally supports only EcoMind's included demo product pages, not real Amazon pages.
-
-See [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md) for the full list.
-
-## Future development
-
-- Review the scoring framework with textile lifecycle experts.
-- Test comprehension, usefulness and tone with users aged 15-24.
-- Validate the minimal-permission extension in a controlled pilot before supporting any additional sites.
-- Integrate licensed textile and lifecycle datasets with provenance and versioning.
-- Add country-specific repair, resale and recycling guidance.
-- Build a confidence model from field coverage, source quality and freshness.
-- Add moderation, appeals and correction workflows for brands and users.
-- Conduct accessibility, privacy, security and bias reviews before release.
-
-## Replacing demo data
-
-Start with [`src/data/products.ts`](src/data/products.ts) and preserve the `Product` interface in [`src/types.ts`](src/types.ts). Do not write API responses directly into the UI. Instead:
-
-1. map the external record into the internal `Product` shape;
-2. preserve source name, URL, licence, retrieval date and field-level provenance;
-3. represent missing values as `null`, never invented numbers;
-4. validate material percentages and units;
-5. calculate confidence from source quality and field coverage;
-6. run the deterministic scoring function only after validation;
-7. label estimates separately from supplier-listed or independently verified values.
-
-The complete migration checklist is in [DATA_REPLACEMENT_GUIDE.md](DATA_REPLACEMENT_GUIDE.md).
+See [ASSUMPTIONS_AND_LIMITATIONS.md](ASSUMPTIONS_AND_LIMITATIONS.md) and [DATA_REPLACEMENT_GUIDE.md](DATA_REPLACEMENT_GUIDE.md) for details.
 
 ## Documentation
 
-- [2-3 minute demo script](DEMO_SCRIPT.md)
-- [Assumptions and limitations](ASSUMPTIONS_AND_LIMITATIONS.md)
+- [2-minute demo script](DEMO_SCRIPT.md)
 - [Testing checklist](TESTING_CHECKLIST.md)
 - [Verification record](VERIFICATION.md)
-- [Demo-data replacement guide](DATA_REPLACEMENT_GUIDE.md)
 - [GitHub publishing details](GITHUB_PUBLISHING.md)
 
-## Privacy and public repository safety
+## Repository safety and licence
 
-This repository contains no API keys, credentials, customer records, retailer order data or private survey responses. The original pasted project brief and local filesystem paths are not included. Runtime data remains local to the browser.
+The repository contains no API keys, credentials, customer records, retailer orders, private survey responses or original local task attachments. Runtime demo data remains in the user's browser.
 
-## Licence
-
-MIT. Product names and rewards are fictional demo content. No retailer, streaming service, certification body or other company partnership is claimed.
+MIT. No retailer, certification body or commercial partnership is claimed.

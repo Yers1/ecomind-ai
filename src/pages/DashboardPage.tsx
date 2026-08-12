@@ -1,4 +1,4 @@
-import { ArrowRight, BookmarkSimple, CheckCircle, Leaf, Medal, Recycle, Sparkle, TrendUp } from '@phosphor-icons/react'
+import { ArrowRight, BookmarkSimple, CheckCircle, Eye, Leaf, Medal, Recycle, Sparkle } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { Page } from '../components/AppShell'
 import { KoalaProgress } from '../components/KoalaProgress'
@@ -11,7 +11,9 @@ const months = ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
 export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) {
   const { points, wishlist, activities, completedActions, completeAction } = useEcoMind()
   const [notice, setNotice] = useState<string | null>(null)
-  const greenerChoices = completedActions.filter((item) => item.startsWith('choose-')).length
+  const analysesCompleted = completedActions.filter((item) => item.startsWith('analysis-')).length
+  const productsCompared = completedActions.filter((item) => item.startsWith('compare-')).length
+  const alternativesSaved = completedActions.filter((item) => item.startsWith('save-')).length
   const completedChallenges = completedActions.filter((item) => item.startsWith('challenge-')).length
 
   const challenge = (key: string, title: string, detail: string, reward: number) => {
@@ -24,28 +26,28 @@ export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) 
   return (
     <div className="dashboard-page page-surface">
       <header className="page-hero container dashboard-header">
-        <div><p className="kicker">Your local demo progress</p><h1>Small choices, visible progress.</h1><p>Estimated impact based on available product information. Figures are directional, not verified savings.</p></div>
+        <div><p className="kicker">Current session · stored locally</p><h1>Small choices, visible progress.</h1><p>These totals reflect actions recorded in this demo profile. Environmental outcomes and savings are not verified.</p></div>
         <div className="points-total"><Sparkle size={24} weight="fill" /><strong>{points}</strong><span>demo EcoPoints</span></div>
       </header>
       <div className="container dashboard-layout">
         <KoalaProgress points={points} />
-        <section className="dashboard-metrics" aria-label="Monthly progress summary">
-          <article><span><TrendUp size={19} /> Average Green Score</span><strong>74</strong><small>Demo trend, up from 46 in March</small></article>
-          <article><span><Leaf size={19} /> Greener options selected</span><strong>{greenerChoices}</strong><small>Meaningful choices in this local profile</small></article>
-          <article><span><BookmarkSimple size={19} /> Wishlist</span><strong>{wishlist.length}</strong><small>{wishlist.length ? 'Products saved for later' : 'No products saved yet'}</small></article>
+        <section className="dashboard-metrics" aria-label="Current session summary">
+          <article><span><Eye size={19} /> Analyses completed</span><strong>{analysesCompleted}</strong><small>Unique demo products analysed</small></article>
+          <article><span><Leaf size={19} /> Products compared</span><strong>{productsCompared}</strong><small>Greener alternatives reviewed</small></article>
+          <article><span><BookmarkSimple size={19} /> Alternatives saved</span><strong>{alternativesSaved}</strong><small>{wishlist.length} total item{wishlist.length === 1 ? '' : 's'} in wishlist</small></article>
           <article><span><Medal size={19} /> Challenges</span><strong>{completedChallenges}</strong><small>Completed this demo session</small></article>
         </section>
         <section className="dashboard-panel trend-panel">
-          <div className="dashboard-panel__heading"><div><h2>Monthly Green Score trend</h2><p>Average score of analysed demo products.</p></div><span>Sample data</span></div>
-          <div className="trend-chart" role="img" aria-label="Green Score rises from 46 in March to 74 in August, with a small dip in May">
+          <div className="dashboard-panel__heading"><div><h2>Example Green Score trend</h2><p>Illustrative sample data—not this user's history.</p></div><span>Sample trend</span></div>
+          <div className="trend-chart" role="img" aria-label="Illustrative sample trend only: score rises from 46 in March to 74 in August, with a small dip in May">
             {trend.map((value, index) => <div className="trend-column" key={months[index]}><span>{value}</span><div><i style={{ height: `${value}%` }} /></div><small>{months[index]}</small></div>)}
           </div>
         </section>
         <section className="dashboard-panel impact-panel">
           <div className="dashboard-panel__heading"><div><h2>Estimated impact</h2><p>Based on product differences in the sample dataset.</p></div><Recycle size={23} /></div>
           <div className="impact-summary">
-            <strong>{greenerChoices > 0 ? 'A small estimated reduction' : 'No estimate yet'}</strong>
-            <p>{greenerChoices > 0 ? 'Your selected alternative uses more recycled content and has a lower sample carbon estimate.' : 'Choose a lower-impact alternative in the product demo to see a directional summary.'}</p>
+            <strong>{alternativesSaved > 0 ? 'Lower-impact option saved' : 'No current-session estimate'}</strong>
+            <p>{alternativesSaved > 0 ? 'A saved demo alternative uses more recycled content and has a lower sample carbon estimate. This is not proof of a purchase or real-world savings.' : 'Compare and save a lower-impact alternative to see a directional, non-verified summary.'}</p>
           </div>
           <div className="impact-caveat"><CheckCircle size={18} /><span>No exact real-world savings are claimed. Purchase, use, care and end-of-life behaviour all matter.</span></div>
         </section>
@@ -54,20 +56,20 @@ export function DashboardPage({ navigate }: { navigate: (page: Page) => void }) 
           <div className="challenge-list">
             <article>
               <div className="challenge-icon"><Recycle size={22} /></div><div><h3>Repair something you own</h3><p>Patch, mend or adjust an item to extend its life.</p></div>
-              <button disabled={completedActions.includes('challenge-repair')} onClick={() => challenge('challenge-repair', 'Repair challenge completed', 'Extended the life of an existing item.', 25)}>{completedActions.includes('challenge-repair') ? 'Completed' : '+25 points'}</button>
+              <button disabled={completedActions.includes('challenge-repair')} onClick={() => challenge('challenge-repair', 'Repair/reuse action self-reported', 'User reported extending the life of an existing item.', 20)}>{completedActions.includes('challenge-repair') ? 'Recorded' : 'Self-report · +20'}</button>
             </article>
             <article>
               <div className="challenge-icon"><Leaf size={22} /></div><div><h3>Pause a new purchase</h3><p>Decide that a new item is not necessary today.</p></div>
-              <button disabled={completedActions.includes('challenge-no-buy')} onClick={() => challenge('challenge-no-buy', 'Mindful pause completed', 'Decided a new purchase was not necessary.', 30)}>{completedActions.includes('challenge-no-buy') ? 'Completed' : '+30 points'}</button>
+              <button disabled={completedActions.includes('challenge-no-buy')} onClick={() => challenge('challenge-no-buy', 'Mindful no-buy decision self-reported', 'User reported that a new item was not needed.', 25)}>{completedActions.includes('challenge-no-buy') ? 'Recorded' : 'Self-report · +25'}</button>
             </article>
           </div>
           {notice && <p className="challenge-notice" role="status">{notice}</p>}
         </section>
         <section className="dashboard-panel activity-panel">
           <div className="dashboard-panel__heading"><div><h2>Recent activity</h2><p>Stored locally on this device.</p></div></div>
-          <div className="activity-list">
-            {activities.map((activity) => <article key={activity.id}><span className="activity-check"><CheckCircle size={19} weight="fill" /></span><div><h3>{activity.title}</h3><p>{activity.detail}</p></div><span className="activity-points">+{activity.points}</span><small>{activity.date}</small></article>)}
-          </div>
+          {activities.length ? <div className="activity-list">
+            {activities.map((activity) => <article key={activity.id}><span className="activity-check"><CheckCircle size={19} weight="fill" /></span><div><h3>{activity.title}</h3><p>{activity.detail}</p></div><span className="activity-points">{activity.points > 0 ? `+${activity.points}` : 'Logged'}</span><small>{activity.date}</small></article>)}
+          </div> : <div className="activity-empty"><Sparkle size={23} /><p>Analyse a Threadly product to begin this local session.</p></div>}
         </section>
         <section className="dashboard-next">
           <div><h2>Ready to check another item?</h2><p>{products.length} local clothing samples are available.</p></div>

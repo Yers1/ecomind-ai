@@ -4,6 +4,7 @@ import { Brand } from '../components/Brand'
 import { KoalaMascot } from '../components/KoalaMascot'
 import { ScoreBadge } from '../components/ScoreBadge'
 import { getProduct } from '../data/products'
+import { surveyInsights } from '../data/surveyInsights'
 import { calculateGreenScore } from '../lib/scoring'
 
 export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
@@ -48,9 +49,17 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
             <span>EcoMind turns scattered product details into</span>
             <strong>one explainable score.</strong>
           </div>
-          <p className="survey-placeholder">Survey finding to be added after analysis.</p>
         </div>
       </section>
+
+      {surveyInsights.length > 0 && (
+        <section className="section container research-section" aria-labelledby="research-title">
+          <div className="section-heading"><h2 id="research-title">What verified research tells us</h2><p>Only reviewed survey findings supplied by the team appear here.</p></div>
+          <div className="research-insights">
+            {surveyInsights.map((insight) => <article key={`${insight.questionNumber ?? 'insight'}-${insight.statement}`}><h3>{insight.statement}</h3><p>{insight.evidence}</p>{insight.respondentCount && <small>{insight.respondentCount} verified respondents</small>}</article>)}
+          </div>
+        </section>
+      )}
 
       <section className="section container how-section">
         <div className="section-heading">
@@ -102,13 +111,13 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
 
       <section className="section container points-section">
         <div className="points-visual">
-          <div className="koala-stage koala-stage--starter"><KoalaMascot size={70} points={10} /><span>Starter Koala</span></div>
-          <div className="koala-stage koala-stage--explorer"><KoalaMascot size={88} points={80} /><span>Eco Explorer</span></div>
-          <div className="koala-stage koala-stage--champion"><KoalaMascot size={106} points={180} /><span>Climate Champion</span></div>
+          <div className="koala-stage koala-stage--starter"><KoalaMascot size={70} points={0} /><span>Starter Koala</span></div>
+          <div className="koala-stage koala-stage--explorer"><KoalaMascot size={88} points={15} /><span>Eco Explorer</span></div>
+          <div className="koala-stage koala-stage--champion"><KoalaMascot size={106} points={40} /><span>Climate Champion</span></div>
         </div>
         <div className="points-copy">
           <h2>Grow your koala, not your basket</h2>
-          <p>Demo EcoPoints reward meaningful choices: saving a sustainable option, repairing, reusing or deciding not to buy.</p>
+          <p>Demo EcoPoints reward learning and self-reported lower-consumption actions—not purchasing more products.</p>
           <div className="points-actions">
             <span><Heart size={18} /> Save thoughtfully</span>
             <span><ShieldCheck size={18} /> Repair and reuse</span>

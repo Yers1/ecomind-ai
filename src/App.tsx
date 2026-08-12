@@ -31,7 +31,7 @@ export default function App() {
   return (
     <AppShell page={page} navigate={navigate}>
       {page === 'home' && <LandingPage navigate={navigate} />}
-      {page === 'demo' && <StoreDemoPage />}
+      {page === 'demo' && <StoreDemoPage navigate={navigate} />}
       {page === 'dashboard' && <DashboardPage navigate={navigate} />}
       {page === 'wishlist' && <WishlistPage navigate={navigate} />}
       {page === 'methodology' && <MethodologyPage navigate={navigate} />}

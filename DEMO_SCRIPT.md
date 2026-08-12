@@ -1,55 +1,57 @@
-# EcoMind AI: 2-3 minute demo script
+# EcoMind AI: two-minute demo script
 
-## Opening: 0:00-0:25
+## 0:00–0:20 — The problem
 
-“Young shoppers want to make responsible choices, but clothing listings make environmental impact hard to understand. Material, recycled content, packaging and carbon information are inconsistent or missing.
+“Clothing listings rarely make environmental information easy to compare. EcoMind AI is a privacy-conscious browser extension that helps a shopper understand what a listing says, what it does not say and how the resulting estimate was calculated.”
 
-EcoMind AI turns those details into one clear, transparent Green Score while the shopper is making a decision.”
+Open the landing page, then **Try the product demo**.
 
-Show the landing page, then select **Try the product demo**.
+## 0:20–0:55 — Activate and inspect
 
-## Product analysis: 0:25-1:10
+“Threadly is our fictional store and every product is local sample data. EcoMind has not analysed anything yet. In the real extension the process starts only after I select **Analyse this product** in the popup.”
 
-“This is a simulated online store using only local sample data. It does not scrape Amazon or connect to a retailer.
+Activate the koala and wait for the drawer.
 
-The koala is visible, but it does not analyse anything until I activate it. I can do this first analysis without creating an account.”
+“Local simulated AI-assisted logic structures the product listing and exposes missing fields. It does not invent environmental facts and does not calculate the score.”
 
-Activate the widget. Let the loading state finish and open the score drawer.
+Expand **See what AI extracted**. Point out the exact listing text, structured fields and confidence. Then show the score breakdown and sources.
 
-“EcoMind structures the listing information and detects uncertainty. The number itself comes from our published formula, not from AI.
+“Our published deterministic formula produces 27 out of 100, grade D. Confidence is separate. Every source is labelled honestly as a sample listing or EcoMind demo estimate.”
 
-This polyester T-shirt scores 27 out of 100, grade D. Materials account for 35 percent, carbon 25 percent, recycled content 20 percent, durability and circularity 10 percent, and packaging 10 percent.
+## 0:55–1:30 — Compare and save
 
-Confidence is separate from the score. Here we can see the source labels and every missing field. Missing information is shown as ‘Not disclosed’ instead of being invented.”
+Select **Compare greener alternative**.
 
-## Comparison and behaviour change: 1:10-1:55
+“EcoMind offers a local lower-impact match, shows its extra price and keeps the trade-off visible. Affordability and practical needs still matter.”
 
-Scroll to the alternative card and select **Compare**.
+The comparison action earns +5 demo EcoPoints. Select **Save lower-impact option** and continue with the local demo profile if prompted.
 
-“EcoMind suggests a lower-impact option at a similar price. It also shows the extra cost and trade-off, because affordability matters and the user should never be shamed.
+“Saving the alternative earns another +5. This records interest, not a purchase and not verified environmental savings. Analysing or buying more items earns nothing.”
 
-The alternative uses 60 percent recycled cotton, has a lower sample carbon estimate and minimal recycled-card packaging.”
+Optionally select **View greener product** to show that the store switches to the exact alternative.
 
-Select **Choose greener option**.
-
-“Only now does EcoMind ask for a profile, because I am trying to keep progress and collect demo EcoPoints.”
-
-Continue as the demo user.
-
-“EcoPoints reward a meaningful lower-impact choice. They do not reward buying more products. This action also unlocks the Eco Explorer koala.”
-
-## Dashboard and close: 1:55-2:40
+## 1:30–1:55 — Dashboard honesty
 
 Open the dashboard.
 
-“The dashboard shows directional monthly progress, saved products, challenges and recent activity. We avoid fake precision: the impact summary says it is estimated from available product information.
+“The dashboard reflects actions from this session: analyses, comparisons, saved alternatives and demo EcoPoints. The historical chart is explicitly an illustrative sample, not user history. Repair/reuse and mindful no-buy challenges are self-reported.”
 
-Users can also earn points for repairing, reusing or deciding not to buy. The wishlist is stored locally on their device.
+Refresh to demonstrate local persistence.
 
-EcoMind is a hackathon prototype. Scores are estimates, not certifications, and the scoring data needs expert review before release. Our goal is simple: make environmental information understandable at the moment a young shopper can act on it.”
+## 1:55–2:10 — Close
 
-## Optional questions
+“EcoMind processes the prototype locally, requests no browsing-history or payment access and supports only our controlled Threadly demo. Scores are estimates, not certifications. The methodology and data need independent expert review before real-world use.”
 
-- **Where is AI used?** Local logic simulates extraction, structuring, uncertainty detection, explanations and alternative matching. The numeric score is deterministic.
-- **What data is collected?** The prototype uses local sample products and browser local storage. It does not collect payment information or full browsing history.
-- **Why a koala?** It turns long-term progress into a friendly, visible reward without encouraging unnecessary purchases.
+## Optional credibility moments
+
+- Switch to the cotton sample to show `~51/100`, Low confidence, missing factors and the 35–66 provisional range.
+- Switch to the recycled/lyocell sample to show a complete High-confidence result.
+- Add `?debug=true` locally to demonstrate the forced analysis-error and retry state.
+- Open an unsupported page and use the extension popup to demonstrate the explicit unsupported state.
+
+## Common questions
+
+- **Where is AI?** Deterministic local logic simulates extraction, structuring, uncertainty flags and explanation. The score itself comes only from the published formula.
+- **What data leaves the browser?** None in this prototype. There is no product-data server request or live AI API.
+- **Why a koala?** It gives friendly long-term feedback without framing another purchase as an environmental achievement.
+- **Are the values verified?** No. Products, values, rewards and source labels are transparent demo data; weights are not scientifically validated.

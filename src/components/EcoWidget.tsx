@@ -12,13 +12,17 @@ type AnalysisState = 'idle' | 'loading' | 'success' | 'error'
 export function EcoWidget({
   product,
   forceError,
+  onAnalysed,
   onSave,
-  onChoose,
+  onCompare,
+  onView,
 }: {
   product: Product
   forceError: boolean
+  onAnalysed: (product: Product) => void
   onSave: (product: Product) => void
-  onChoose: (product: Product) => void
+  onCompare: (current: Product, alternative: Product) => void
+  onView: (product: Product) => void
 }) {
   const [state, setState] = useState<AnalysisState>('idle')
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -37,9 +41,10 @@ export function EcoWidget({
     const timer = window.setTimeout(() => {
       setState('success')
       setDrawerOpen(true)
+      onAnalysed(product)
     }, 950)
     return () => window.clearTimeout(timer)
-  }, [state])
+  }, [state, onAnalysed, product])
 
   const activate = () => {
     if (state === 'idle') setState('loading')
@@ -50,7 +55,7 @@ export function EcoWidget({
   return (
     <>
       <button className={`eco-widget eco-widget--${state}`} onClick={activate} aria-label={state === 'success' ? `Open EcoMind analysis. Green Score ${result.score} out of 100, grade ${result.grade}` : state === 'loading' ? 'EcoMind is analysing this product' : state === 'error' ? 'EcoMind analysis failed. Try again' : 'Activate EcoMind product analysis'}>
-        <KoalaMascot size={58} points={result.score} />
+        <KoalaMascot size={58} points={state === 'success' ? result.score : 0} />
         {state === 'idle' && <span className="eco-widget__message"><b>Check its impact</b><small>Activate EcoMind</small></span>}
         {state === 'loading' && <span className="eco-widget__message eco-widget__message--loading"><b>Analysing listing</b><small>Finding materials and data gaps</small><i /></span>}
         {state === 'error' && <span className="eco-widget__message"><b>Could not analyse</b><small>Try again</small></span>}
@@ -68,20 +73,28 @@ export function EcoWidget({
         alternative={alternative}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onCompare={() => setCompareOpen(true)}
-        onSave={() => onSave(product)}
-        onChoose={() => alternative && onChoose(alternative)}
+        onCompare={() => {
+          if (!alternative) return
+          onCompare(product, alternative)
+          setDrawerOpen(false)
+          setCompareOpen(true)
+        }}
+        onSave={() => {
+          setDrawerOpen(false)
+          onSave(product)
+        }}
       />
       {alternative && (
         <ProductComparison
           current={product}
           alternative={alternative}
           open={compareOpen}
-          onClose={() => setCompareOpen(false)}
-          onChoose={() => {
+          onClose={() => { setCompareOpen(false); setDrawerOpen(true) }}
+          onSave={() => {
             setCompareOpen(false)
-            onChoose(alternative)
+            onSave(alternative)
           }}
+          onView={() => { setCompareOpen(false); onView(alternative) }}
         />
       )}
     </>

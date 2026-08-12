@@ -1,4 +1,4 @@
-export const STORAGE_KEY = 'ecomindExtensionState'
+export const STORAGE_KEY = 'ecomindExtensionStateV2'
 
 export interface ExtensionWishlistItem {
   id: string
@@ -30,18 +30,10 @@ export interface ExtensionState {
 }
 
 export const DEFAULT_EXTENSION_STATE: ExtensionState = {
-  points: 35,
+  points: 0,
   wishlist: [],
   completedActions: [],
-  activities: [
-    {
-      id: 'extension-welcome',
-      title: 'Extension profile started',
-      detail: 'Starter points added for the EcoMind extension demo.',
-      points: 35,
-      date: 'Today',
-    },
-  ],
+  activities: [],
   preferences: {
     showWidgetAfterAnalysis: true,
   },

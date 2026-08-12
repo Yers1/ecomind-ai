@@ -1,20 +1,14 @@
 import { LockKey, X } from '@phosphor-icons/react'
-import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { useAccessibleDialog } from '../hooks/useAccessibleDialog'
 
 export function LoginModal({ open, onClose, onContinue, actionLabel }: { open: boolean; onClose: () => void; onContinue: () => void; actionLabel: string }) {
-  const closeRef = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    if (!open) return
-    closeRef.current?.focus()
-    const handler = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
+  const dialogRef = useAccessibleDialog(open, onClose)
   if (!open) return null
-  return (
+  return createPortal(
     <div className="modal-layer modal-layer--login" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="modal login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
-        <button ref={closeRef} className="icon-button modal__close" onClick={onClose} aria-label="Close sign-in dialog"><X size={21} /></button>
+      <section ref={dialogRef} className="modal login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+        <button data-dialog-initial className="icon-button modal__close" onClick={onClose} aria-label="Close sign-in dialog"><X size={21} /></button>
         <div className="modal-icon"><LockKey size={27} weight="duotone" /></div>
         <p className="kicker">Keep your progress</p>
         <h2 id="login-title">Continue with a demo profile</h2>
@@ -23,6 +17,7 @@ export function LoginModal({ open, onClose, onContinue, actionLabel }: { open: b
         <button className="button button--text button--full" onClick={onClose}>Not now</button>
         <small>No email or personal information is collected.</small>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

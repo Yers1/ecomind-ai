@@ -6,7 +6,7 @@ import { calculateGreenScore, SCORE_WEIGHTS } from '../lib/scoring'
 const factors = [
   { icon: Leaf, name: 'Material impact', weight: SCORE_WEIGHTS.materials, text: 'A weighted score from the material mix using sample textile factors.' },
   { icon: Wind, name: 'Estimated carbon footprint', weight: SCORE_WEIGHTS.carbon, text: 'A simple demo scale using listed or estimated kg CO2e values.' },
-  { icon: Recycle, name: 'Recycled content', weight: SCORE_WEIGHTS.recycled, text: 'The disclosed percentage of recycled fibre. Missing values score zero.' },
+  { icon: Recycle, name: 'Recycled content', weight: SCORE_WEIGHTS.recycled, text: 'The disclosed recycled-fibre percentage. Missing values remain unknown and make the result provisional.' },
   { icon: ShieldCheck, name: 'Durability and circularity', weight: SCORE_WEIGHTS.durability, text: 'The average of two demo ratings for product life and end-of-life potential.' },
   { icon: Package, name: 'Packaging', weight: SCORE_WEIGHTS.packaging, text: 'A sample factor for plastic, paper or minimal recycled-card packaging.' },
 ]
@@ -26,8 +26,8 @@ export function MethodologyPage({ navigate }: { navigate: (page: Page) => void }
         <section className="worked-example">
           <div className="worked-example__product"><img src={sample.image} alt={sample.productName} /><div><span>Worked demo example</span><h2>{sample.shortName}</h2><p>All numbers below are sample or estimated data.</p></div></div>
           <div className="worked-example__math">
-            {result.breakdown.map((item) => <div key={item.key}><span>{item.label}</span><code>{Math.round(item.score)} × {Math.round(item.weight * 100)}%</code><strong>{item.weightedPoints.toFixed(1)} pts</strong></div>)}
-            <div className="worked-example__total"><span>Rounded total</span><code>{result.breakdown.map((item) => item.weightedPoints.toFixed(1)).join(' + ')}</code><strong>{result.score}/100</strong></div>
+            {result.breakdown.map((item) => <div key={item.key}><span>{item.label}</span><code>{item.score === null ? 'Not disclosed' : `${Math.round(item.score)} × ${Math.round(item.weight * 100)}%`}</code><strong>{item.weightedPoints === null ? 'Unknown' : `${item.weightedPoints.toFixed(1)} pts`}</strong></div>)}
+            <div className="worked-example__total"><span>Rounded total</span><code>{result.breakdown.map((item) => item.weightedPoints?.toFixed(1) ?? 'unknown').join(' + ')}</code><strong>{result.score}/100</strong></div>
           </div>
         </section>
         <section className="confidence-method">
@@ -35,7 +35,12 @@ export function MethodologyPage({ navigate }: { navigate: (page: Page) => void }
           <div className="confidence-levels"><article><CheckCircle size={20} weight="fill" /><div><h3>High</h3><p>Most relevant fields are available.</p></div></article><article><Database size={20} weight="fill" /><div><h3>Medium</h3><p>Some values are missing or estimated.</p></div></article><article><WarningCircle size={20} weight="fill" /><div><h3>Low</h3><p>Important product information is unavailable.</p></div></article></div>
         </section>
         <section className="ai-boundary"><Brain size={29} weight="duotone" /><div><h2>Where simulated AI helps</h2><p>Local deterministic logic extracts materials, structures fields, flags uncertainty, writes a plain-language explanation and selects a relevant alternative from the sample dataset.</p></div><div className="ai-boundary__rule"><strong>AI interprets.</strong><span>The formula scores.</span></div></section>
-        <section className="method-caveats"><h2>Important limitations</h2><div><p><strong>Not a certification.</strong> The score is an educational estimate for a hackathon prototype.</p><p><strong>Missing means missing.</strong> EcoMind displays “Not disclosed” and reduces confidence.</p><p><strong>People information stays separate.</strong> Labour ethics is not included in this environmental score.</p><p><strong>Review before release.</strong> Material factors and thresholds need expert review and user testing.</p></div></section>
+        <section className="method-caveats"><h2>Important limitations</h2><div><p><strong>Prototype weights.</strong> The five weights are assumptions and have not been scientifically validated.</p><p><strong>Possible overlap.</strong> Material-impact and carbon factors may represent some of the same underlying impacts.</p><p><strong>Missing means unknown.</strong> EcoMind displays “Not disclosed”, reduces confidence and shows a provisional range instead of treating unknown as zero.</p><p><strong>Not a certification.</strong> EcoMind is an educational decision-support tool, not a lifecycle assessment or official label.</p><p><strong>People information stays separate.</strong> Labour ethics is not included in this environmental score.</p><p><strong>Expert review required.</strong> Factors, thresholds, confidence rules and wording require independent review before real-world use.</p></div></section>
+        <section className="source-catalogue">
+          <div><h2>Source labels used in this demo</h2><p>Every value is attached to a source type. None of these labels imply an external partnership or verified dataset.</p></div>
+          <div>{sample.sources.map((source) => <article key={`${source.type}-${source.label}`}><span>{source.type.replaceAll('-', ' ')}</span><h3>{source.label}</h3><p>{source.note}</p></article>)}</div>
+        </section>
+        <section className="future-data"><h2>What production data would require</h2><p>A real release could use reviewed lifecycle-assessment data, environmental-footprint datasets, licensed textile datasets, independently checked certifications and permissioned retailer product information. EcoMind would need provenance, versioning, geographic relevance and expert review before using any source in a consumer-facing score.</p></section>
         <section className="method-next"><div><h2>See the methodology in action</h2><p>Compare products with high, medium and low confidence.</p></div><button className="button button--primary" onClick={() => navigate('demo')}>Open product demo <ArrowRight size={18} /></button></section>
       </div>
     </div>

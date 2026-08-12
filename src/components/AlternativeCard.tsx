@@ -1,9 +1,9 @@
-import { ArrowRight, Leaf } from '@phosphor-icons/react'
+import { Leaf } from '@phosphor-icons/react'
 import type { Product } from '../types'
 import { calculateGreenScore } from '../lib/scoring'
 import { ConfidenceBadge } from './ConfidenceBadge'
 
-export function AlternativeCard({ product, onCompare, onChoose }: { product: Product; onCompare: () => void; onChoose: () => void }) {
+export function AlternativeCard({ product }: { product: Product }) {
   const result = calculateGreenScore(product)
   return (
     <article className="alternative-card">
@@ -25,10 +25,6 @@ export function AlternativeCard({ product, onCompare, onChoose }: { product: Pro
           </div>
         </div>
         <div className="alternative-card__score"><strong>{result.score}</strong><span>/100</span><b>{result.grade}</b></div>
-      </div>
-      <div className="alternative-card__actions">
-        <button className="button button--secondary" onClick={onCompare}>Compare</button>
-        <button className="button button--primary" onClick={onChoose}>Choose greener option <ArrowRight size={17} /></button>
       </div>
     </article>
   )

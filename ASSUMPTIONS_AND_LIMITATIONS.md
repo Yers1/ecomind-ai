@@ -7,7 +7,7 @@
 - The Manifest V3 extension analyses only the active EcoMind demo product page after explicit activation.
 - The first analysis should work without an account.
 - A local demo profile is enough to show gated saving and EcoPoints behaviour.
-- EcoPoints thresholds are 0-59 for Starter Koala, 60-149 for Eco Explorer and 150 or more for Climate Champion.
+- EcoPoints thresholds are 0-14 for Starter Koala, 15-39 for Eco Explorer and 40 or more for Climate Champion.
 - Demo rewards have no monetary value and no partner backing.
 - A “similar price” alternative may cost a small amount more, with the difference stated clearly.
 
@@ -18,7 +18,7 @@
 - Carbon values are product-level estimates for demonstration only.
 - Material impact factors are prototype assumptions, not peer-reviewed lifecycle factors.
 - Durability and circularity values are demo ratings.
-- Confidence labels are manually assigned from the completeness of each sample record.
+- Confidence labels are calculated deterministically from required-field completeness.
 - Source labels name demo inputs and do not represent live integrations.
 - Product images are original AI-generated catalog assets created for this prototype.
 
@@ -27,8 +27,8 @@
 - The score is not a lifecycle assessment, environmental product declaration or certification.
 - Material factors do not account for geography, energy mix, dyeing, finishing, transport, care or end-of-life outcomes.
 - The carbon formula is intentionally simple and needs expert validation.
-- Missing recycled content receives zero in the prototype formula. This avoids inventing a positive value but may penalise non-disclosure differently from known zero content.
-- Missing packaging receives a conservative default score of 30. This is still an assumption and is labelled through low confidence.
+- Missing factors remain `null`, reduce confidence and are excluded from the provisional midpoint calculation rather than being treated as confirmed zero.
+- Incomplete records show an approximation mark and a score range spanning the minimum and maximum contribution of unknown factors.
 - Score thresholds and letter grades need comprehension and behaviour-change testing.
 - Labour ethics is excluded from the environmental score and shown separately.
 
@@ -60,6 +60,6 @@
 ## Research limitations
 
 - No survey statistics are included because none were supplied.
-- The interface uses a placeholder for future survey findings.
+- The empty `src/data/surveyInsights.ts` data source is the only survey placeholder; no public survey section is rendered until verified findings are added.
 - The prototype has not yet been validated with users aged 15-24.
 - Accessibility was designed into the prototype but still needs testing with assistive technologies and real users.

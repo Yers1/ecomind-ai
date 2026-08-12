@@ -1,104 +1,13 @@
+import { PRODUCT_RECORDS, packagingLabels } from '../../shared/ecomind'
 import type { Product } from '../types'
 
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
-
-export const products: Product[] = [
-  {
-    id: 'polyester-everyday-tee',
-    productName: 'Northline Everyday Performance Tee',
-    shortName: 'Performance Tee',
-    category: 'Clothing',
-    image: asset('/products/polyester-tee.png'),
-    price: 14.99,
-    currency: 'GBP',
-    rating: 4.4,
-    reviewCount: 318,
-    color: 'Charcoal',
-    description: 'A lightweight everyday T-shirt with quick-dry fabric and a relaxed unisex fit.',
-    listingText: 'Shell: 100% polyester. Quick-dry jersey. Packed in an individual protective polybag.',
-    materials: [{ material: 'Polyester', percentage: 100 }],
-    recycledContentPercentage: 0,
-    estimatedCarbonKg: 5.2,
-    carbonValueType: 'estimated',
-    packagingType: 'plastic-mailer',
-    durabilityRating: 62,
-    circularityRating: 45,
-    certifications: [],
-    sourceLabels: ['Demo product listing', 'EcoMind sample textile factors'],
-    missingFields: ['Manufacturing location', 'Supplier lifecycle assessment', 'End-of-life guidance'],
-    confidenceLevel: 'Medium',
-    alternativeProductId: 'renew-loop-tee',
-    peopleInformation: 'Labour and supplier audit information is not disclosed in this demo listing.',
-    mainAdvantage: 'Lowest upfront price and quick-dry fabric.',
-    tradeOff: 'Virgin synthetic fibre and plastic packaging increase estimated impact.',
-  },
-  {
-    id: 'cotton-classic-tee',
-    productName: 'Willow & Thread Classic Cotton Tee',
-    shortName: 'Cotton Tee',
-    category: 'Clothing',
-    image: asset('/products/cotton-tee.png'),
-    price: 18.5,
-    currency: 'GBP',
-    rating: 4.6,
-    reviewCount: 204,
-    color: 'Natural White',
-    description: 'A soft midweight cotton T-shirt with a classic fit and reinforced neckline.',
-    listingText: '100% cotton jersey. Paper swing tag. Other packaging, recycled content and fibre origin are not disclosed.',
-    materials: [{ material: 'Cotton', percentage: 100 }],
-    recycledContentPercentage: null,
-    estimatedCarbonKg: 4.1,
-    carbonValueType: 'estimated',
-    packagingType: null,
-    durabilityRating: 65,
-    circularityRating: 55,
-    certifications: [],
-    sourceLabels: ['Demo product listing', 'EcoMind estimated textile range'],
-    missingFields: ['Recycled content', 'Packaging type', 'Cotton origin', 'Supplier lifecycle assessment'],
-    confidenceLevel: 'Low',
-    alternativeProductId: 'renew-loop-tee',
-    peopleInformation: 'Labour conditions and responsible sourcing information are not disclosed.',
-    mainAdvantage: 'Familiar natural fibre and a midweight construction.',
-    tradeOff: 'Several important product details are missing, so confidence is low.',
-  },
-  {
-    id: 'renew-loop-tee',
-    productName: 'Mosswell Renew Loop Tee',
-    shortName: 'Renew Loop Tee',
-    category: 'Clothing',
-    image: asset('/products/recycled-tee.png'),
-    price: 21.0,
-    currency: 'GBP',
-    rating: 4.7,
-    reviewCount: 126,
-    color: 'Forest Green',
-    description: 'A durable jersey T-shirt made with recycled cotton and lower-impact lyocell.',
-    listingText: '60% recycled cotton, 40% lyocell. Plastic-free recycled-card packaging. Repair patch included.',
-    materials: [
-      { material: 'Recycled cotton', percentage: 60 },
-      { material: 'Lyocell', percentage: 40 },
-    ],
-    recycledContentPercentage: 60,
-    estimatedCarbonKg: 1.9,
-    carbonValueType: 'listed',
-    packagingType: 'minimal-recycled-cardboard',
-    durabilityRating: 84,
-    circularityRating: 86,
-    certifications: ['Demo verified-material label'],
-    sourceLabels: ['Demo product listing', 'Demo supplier footprint statement', 'EcoMind sample textile factors'],
-    missingFields: ['Country-specific end-of-life route'],
-    confidenceLevel: 'High',
-    alternativeProductId: null,
-    peopleInformation: 'A demo supplier code of conduct is listed. This is not independently verified in the prototype.',
-    mainAdvantage: 'High recycled content, lower estimated carbon and minimal packaging.',
-    tradeOff: 'Costs a little more than the conventional options.',
-  },
-]
-
-export const getProduct = (id: string) => products.find((product) => product.id === id) ?? products[0]
-
-export const packagingLabels: Record<string, string> = {
-  'plastic-mailer': 'Individual plastic mailer',
-  'recycled-paper': 'Recycled paper wrap',
-  'minimal-recycled-cardboard': 'Minimal recycled-card packaging',
+const productImages: Record<string, string> = {
+  'polyester-everyday-tee': asset('/products/polyester-tee.png'),
+  'cotton-classic-tee': asset('/products/cotton-tee.png'),
+  'renew-loop-tee': asset('/products/recycled-tee.png'),
 }
+
+export const products: Product[] = PRODUCT_RECORDS.map((product) => ({ ...product, image: productImages[product.id] }))
+export const getProduct = (id: string) => products.find((product) => product.id === id) ?? products[0]
+export { packagingLabels }

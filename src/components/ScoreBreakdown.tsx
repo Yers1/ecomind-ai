@@ -20,7 +20,7 @@ export function ScoreBreakdown({ result }: { result: ScoreResult }) {
             <div className="breakdown-item__body">
               <div className="breakdown-item__heading">
                 <h4>{item.label}</h4>
-                <span>{Math.round(item.score)}/100</span>
+                <span>{item.score === null ? 'Not disclosed' : `${Math.round(item.score)}/100`}</span>
               </div>
               <p>{item.detail}</p>
             </div>

@@ -1,37 +1,44 @@
-import { Check, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from '@phosphor-icons/react'
-import { useCallback, useState } from 'react'
+import { ArrowLeft, Check, Heart, Minus, Plus, ShieldCheck, ShoppingBag, Star, Truck } from '@phosphor-icons/react'
+import { useCallback, useEffect, useState } from 'react'
+import type { Page } from '../components/AppShell'
 import { EcoWidget } from '../components/EcoWidget'
 import { LoginModal } from '../components/LoginModal'
 import { Toast } from '../components/Toast'
-import { getKoalaLevel } from '../components/KoalaMascot'
 import { products } from '../data/products'
 import { calculateGreenScore } from '../lib/scoring'
 import { useEcoMind } from '../state/EcoMindContext'
 import type { Product } from '../types'
 
-type PendingAction = { type: 'save' | 'choose'; product: Product } | null
+type PendingAction = { type: 'save'; product: Product } | null
 
-export function StoreDemoPage() {
-  const [selectedId, setSelectedId] = useState(products[0].id)
+export function StoreDemoPage({ navigate }: { navigate: (page: Page) => void }) {
+  const [selectedId, setSelectedId] = useState(() => {
+    const requested = sessionStorage.getItem('ecomind-demo-product-to-view')
+    sessionStorage.removeItem('ecomind-demo-product-to-view')
+    return requested && products.some((item) => item.id === requested) ? requested : products[0].id
+  })
   const [quantity, setQuantity] = useState(1)
   const [forceError, setForceError] = useState(false)
   const [pending, setPending] = useState<PendingAction>(null)
   const [toast, setToast] = useState<string | null>(null)
-  const { authenticated, login, saveProduct, chooseAlternative, points } = useEcoMind()
+  const { authenticated, login, saveProduct, recordAnalysis, recordComparison } = useEcoMind()
   const product = products.find((item) => item.id === selectedId) ?? products[0]
+  const showDebugControls = import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === 'true'
+
+  useEffect(() => {
+    const viewProduct = (event: Event) => {
+      const id = (event as CustomEvent<{ productId?: string }>).detail?.productId
+      if (id && products.some((item) => item.id === id)) setSelectedId(id)
+    }
+    document.addEventListener('ecomind-view-product', viewProduct)
+    return () => document.removeEventListener('ecomind-view-product', viewProduct)
+  }, [])
 
   const perform = useCallback((action: NonNullable<PendingAction>) => {
-    if (action.type === 'save') {
-      const eligible = calculateGreenScore(action.product).score >= 65
-      saveProduct(action.product.id, action.product.productName, eligible)
-      setToast(eligible ? `${action.product.shortName} saved. +15 demo EcoPoints.` : `${action.product.shortName} saved. EcoPoints reward lower-impact saves.`)
-    } else {
-      const levelBefore = getKoalaLevel(points)
-      chooseAlternative(action.product.id, action.product.productName)
-      const levelAfter = getKoalaLevel(points + 35)
-      setToast(levelBefore !== levelAfter ? `+35 demo EcoPoints. ${levelAfter} unlocked!` : '+35 demo EcoPoints for choosing a lower-impact option.')
-    }
-  }, [chooseAlternative, points, saveProduct])
+    const eligible = calculateGreenScore(action.product).score >= 65
+    const awarded = saveProduct(action.product.id, action.product.productName, eligible)
+    setToast(awarded ? `${action.product.shortName} saved. +5 demo EcoPoints.` : `${action.product.shortName} saved locally${eligible ? '; reward already recorded.' : '. No purchase is assumed.'}`)
+  }, [saveProduct])
 
   const requireProfile = (action: NonNullable<PendingAction>) => {
     if (authenticated) perform(action)
@@ -49,10 +56,11 @@ export function StoreDemoPage() {
       <div className="demo-banner">
         <span>Interactive prototype</span>
         <p>Local sample data only. Activate the koala to start an analysis.</p>
-        <div className="demo-state-controls" aria-label="Prototype state controls">
+        <button className="demo-exit" onClick={() => navigate('home')}><ArrowLeft size={15} /> Back to EcoMind</button>
+        {showDebugControls && <div className="demo-state-controls" aria-label="Prototype state controls">
           <button className={!forceError ? 'is-active' : ''} onClick={() => setForceError(false)}>Normal state</button>
           <button className={forceError ? 'is-active' : ''} onClick={() => setForceError(true)}>Test error</button>
-        </div>
+        </div>}
       </div>
       <div className="store-header">
         <button className="store-logo">Threadly</button>
@@ -62,10 +70,7 @@ export function StoreDemoPage() {
       <nav className="store-categories" aria-label="Store categories"><span>New in</span><span>Clothing</span><span>Basics</span><span>Active</span><span>Offers</span></nav>
       <div className="product-switcher" aria-label="Choose a sample product">
         <span>Sample products</span>
-        {products.map((item) => {
-          const score = calculateGreenScore(item)
-          return <button key={item.id} className={item.id === selectedId ? 'is-active' : ''} onClick={() => { setSelectedId(item.id); setForceError(false) }}><img src={item.image} alt="" /><span>{item.shortName}<small>Demo score {score.score}</small></span></button>
-        })}
+        {products.map((item) => <button key={item.id} className={item.id === selectedId ? 'is-active' : ''} onClick={() => { setSelectedId(item.id); setForceError(false) }}><img src={item.image} alt={`${item.shortName} product thumbnail`} /><span>{item.shortName}<small>£{item.price.toFixed(2)}</small></span></button>)}
       </div>
       <div className="store-breadcrumb container">Clothing <span>/</span> T-shirts <span>/</span> {product.shortName}</div>
       <section
@@ -82,7 +87,8 @@ export function StoreDemoPage() {
         data-packaging={product.packagingType ?? ''}
         data-durability={String(product.durabilityRating)}
         data-circularity={String(product.circularityRating)}
-        data-source-labels={JSON.stringify(product.sourceLabels)}
+        data-sources={JSON.stringify(product.sources)}
+        data-factor-sources={JSON.stringify(product.factorSources)}
         data-missing-fields={JSON.stringify(product.missingFields)}
         data-alternative-product-id={product.alternativeProductId ?? ''}
       >
@@ -109,8 +115,18 @@ export function StoreDemoPage() {
         </div>
       </section>
       <section className="store-recommendations container"><h2>You might also like</h2><p>Product recommendations are not part of the EcoMind analysis.</p></section>
-      <EcoWidget product={product} forceError={forceError} onSave={(item) => requireProfile({ type: 'save', product: item })} onChoose={(item) => requireProfile({ type: 'choose', product: item })} />
-      <LoginModal open={pending !== null} actionLabel={pending?.type === 'save' ? 'save this product' : 'keep this choice'} onClose={() => setPending(null)} onContinue={continueLogin} />
+      <EcoWidget
+        product={product}
+        forceError={forceError}
+        onAnalysed={(item) => recordAnalysis(item.id, item.productName)}
+        onSave={(item) => requireProfile({ type: 'save', product: item })}
+        onCompare={(current, alternative) => {
+          const awarded = recordComparison(current.id, alternative.productName)
+          setToast(awarded ? 'Alternative compared. +5 demo EcoPoints.' : 'Comparison reopened. Reward already recorded.')
+        }}
+        onView={(item) => { setSelectedId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+      />
+      <LoginModal open={pending !== null} actionLabel="save this product" onClose={() => setPending(null)} onContinue={continueLogin} />
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
   )

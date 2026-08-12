@@ -21,26 +21,19 @@ interface EcoMindContextValue extends StoredState {
   logout: () => void
   saveProduct: (productId: string, productName: string, rewardEligible?: boolean) => number
   removeProduct: (productId: string) => void
-  chooseAlternative: (productId: string, productName: string) => number
+  recordAnalysis: (productId: string, productName: string) => number
+  recordComparison: (productId: string, productName: string) => number
   completeAction: (key: string, title: string, detail: string, points: number) => number
   isSaved: (productId: string) => boolean
 }
 
-const STORAGE_KEY = 'ecomind-ai-demo-state-v1'
+const STORAGE_KEY = 'ecomind-ai-demo-state-v2'
 const initialState: StoredState = {
   authenticated: false,
-  points: 35,
+  points: 0,
   wishlist: [],
   completedActions: [],
-  activities: [
-    {
-      id: 'welcome',
-      title: 'Demo profile started',
-      detail: 'Starter points added to demonstrate koala progression.',
-      points: 35,
-      date: 'Today',
-    },
-  ],
+  activities: [],
 }
 
 const EcoMindContext = createContext<EcoMindContextValue | null>(null)
@@ -68,14 +61,15 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
         setState((current) => {
           const extensionIds = (extension.wishlist ?? []).map((item) => item.id)
           const activityMap = new Map<string, ActivityItem>()
-          ;[...(extension.activities ?? []), ...current.activities].forEach((activity) => activityMap.set(activity.id, activity))
+          ;[...(extension.activities ?? []), ...current.activities].forEach((activity) => activityMap.set(activity.id.replace(/-\d+$/, ''), activity))
+          const activities = [...activityMap.values()].slice(0, 12)
           return {
             ...current,
             authenticated: true,
-            points: Math.max(current.points, extension.points ?? 0),
+            points: activities.reduce((total, activity) => total + activity.points, 0),
             wishlist: [...new Set([...current.wishlist, ...extensionIds])],
             completedActions: [...new Set([...current.completedActions, ...(extension.completedActions ?? [])])],
-            activities: [...activityMap.values()].slice(0, 8),
+            activities,
           }
         })
       } catch {
@@ -91,20 +85,19 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => setState((current) => ({ ...current, authenticated: false })), [])
 
   const awardAction = useCallback((key: string, title: string, detail: string, points: number) => {
-    let awarded = 0
+    if (state.completedActions.includes(key)) return 0
     setState((current) => {
       if (current.completedActions.includes(key)) return current
-      awarded = points
       const activity: ActivityItem = { id: `${key}-${Date.now()}`, title, detail, points, date: 'Today' }
       return {
         ...current,
         points: current.points + points,
         completedActions: [...current.completedActions, key],
-        activities: [activity, ...current.activities].slice(0, 8),
+        activities: [activity, ...current.activities].slice(0, 12),
       }
     })
-    return awarded
-  }, [])
+    return points
+  }, [state.completedActions])
 
   const saveProduct = useCallback(
     (productId: string, productName: string, rewardEligible = true) => {
@@ -113,7 +106,7 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
           ? current
           : { ...current, wishlist: [...current.wishlist, productId] },
       )
-      return rewardEligible ? awardAction(`save-${productId}`, 'Lower-impact product saved', productName, 15) : 0
+      return rewardEligible ? awardAction(`save-${productId}`, 'Lower-impact option saved', productName, 5) : 0
     },
     [awardAction],
   )
@@ -123,9 +116,15 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const chooseAlternative = useCallback(
+  const recordAnalysis = useCallback(
     (productId: string, productName: string) =>
-      awardAction(`choose-${productId}`, 'Lower-impact option selected', productName, 35),
+      awardAction(`analysis-${productId}`, 'Product analysis completed', productName, 0),
+    [awardAction],
+  )
+
+  const recordComparison = useCallback(
+    (productId: string, productName: string) =>
+      awardAction(`compare-${productId}`, 'Greener alternative compared', productName, 5),
     [awardAction],
   )
 
@@ -136,11 +135,12 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
       logout,
       saveProduct,
       removeProduct,
-      chooseAlternative,
+      recordAnalysis,
+      recordComparison,
       completeAction: awardAction,
       isSaved: (productId: string) => state.wishlist.includes(productId),
     }),
-    [state, login, logout, saveProduct, removeProduct, chooseAlternative, awardAction],
+    [state, login, logout, saveProduct, removeProduct, recordAnalysis, recordComparison, awardAction],
   )
 
   return <EcoMindContext.Provider value={value}>{children}</EcoMindContext.Provider>

@@ -22,9 +22,10 @@
 - [ ] The alternative card uses supportive, non-judgemental language.
 - [ ] Compare opens a side-by-side product comparison.
 - [ ] Price, materials, recycled content, carbon, packaging, confidence, advantage and trade-off are included.
-- [ ] Saving or choosing prompts for a profile only after the first analysis.
+- [ ] Saving prompts for a profile only after the first analysis.
 - [ ] Continuing as the demo user completes the pending action.
-- [ ] Choosing the alternative awards 35 demo EcoPoints once.
+- [ ] Comparing the alternative awards 5 demo EcoPoints once.
+- [ ] Saving the lower-impact alternative awards another 5 demo EcoPoints once.
 - [ ] Koala progression updates after enough points.
 
 ## Prototype states
@@ -32,7 +33,8 @@
 - [ ] Widget idle/collapsed state works.
 - [ ] Loading state works.
 - [ ] Success state works.
-- [ ] Normal-state control resets the widget.
+- [ ] Developer controls are absent in the public demo.
+- [ ] `?debug=true` or development mode reveals the normal/error controls.
 - [ ] Test-error control shows the error state.
 - [ ] Error-state retry returns to loading and success.
 - [ ] Cotton sample shows low confidence and missing data.
@@ -44,16 +46,16 @@
 
 ## EcoPoints and dashboard
 
-- [ ] Saving an eligible lower-impact product awards 15 points once.
+- [ ] Saving an eligible lower-impact product awards 5 points once.
 - [ ] Saving a higher-impact product does not award points.
-- [ ] Choosing an alternative awards 35 points once.
-- [ ] Repair challenge awards 25 points once.
-- [ ] No-buy challenge awards 30 points once.
+- [ ] Comparing an alternative awards 5 points once.
+- [ ] Repair/reuse challenge awards 20 points once and is labelled self-reported.
+- [ ] No-buy challenge awards 25 points once and is labelled self-reported.
 - [ ] Dashboard trend is labelled sample data.
 - [ ] Impact copy avoids exact verified-savings claims.
 - [ ] Recent activity updates.
 - [ ] Page reload preserves wishlist, points and activity.
-- [ ] Clearing `ecomind-ai-demo-state-v1` resets progress.
+- [ ] Clearing `ecomind-ai-demo-state-v2` resets progress.
 
 ## Accessibility
 
@@ -111,7 +113,7 @@
 - [ ] The extension Green Score matches the web scoring formula.
 - [ ] Missing-data and low-confidence states are visible for the cotton demo.
 - [ ] Saving adds an item to the extension wishlist.
-- [ ] Choosing the alternative awards demo EcoPoints only once.
+- [ ] Comparing and saving the lower-impact alternative each award 5 demo EcoPoints only once.
 - [ ] Wishlist and points remain in `chrome.storage.local` after refreshing the demo page.
 - [ ] Reopening the popup shows the persisted EcoPoints total.
 - [ ] The dashboard mirrors extension state when the content-script bridge is active.

@@ -12,6 +12,7 @@ export function AppShell({ page, navigate, children }: { page: Page; navigate: (
     setMobileOpen(false)
     navigate(next)
   }
+  if (page === 'demo') return <div className="app-shell app-shell--store"><main id="main-content">{children}</main></div>
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -19,7 +20,7 @@ export function AppShell({ page, navigate, children }: { page: Page; navigate: (
           <Brand compact />
         </button>
         <nav className={`site-nav ${mobileOpen ? 'site-nav--open' : ''}`} aria-label="Primary navigation">
-          <button className={page === 'demo' ? 'is-active' : ''} onClick={() => go('demo')}>Product demo</button>
+          <button onClick={() => go('demo')}>Product demo</button>
           <button className={page === 'dashboard' ? 'is-active' : ''} onClick={() => go('dashboard')}>Dashboard</button>
           <button className={page === 'wishlist' ? 'is-active' : ''} onClick={() => go('wishlist')}>Wishlist {wishlist.length > 0 && <span>{wishlist.length}</span>}</button>
           <button className={page === 'methodology' ? 'is-active' : ''} onClick={() => go('methodology')}>Methodology</button>
