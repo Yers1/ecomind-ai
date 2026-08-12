@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import { createClient } from '@supabase/supabase-js'
+import { existsSync } from 'node:fs'
+
+if (existsSync('.env.test.local') && typeof process.loadEnvFile === 'function') process.loadEnvFile('.env.test.local')
 
 const required = ['VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'SUPABASE_TEST_ACCOUNT_A_EMAIL', 'SUPABASE_TEST_ACCOUNT_A_PASSWORD', 'SUPABASE_TEST_ACCOUNT_B_EMAIL', 'SUPABASE_TEST_ACCOUNT_B_PASSWORD', 'SUPABASE_TEST_ACCOUNT_C_EMAIL', 'SUPABASE_TEST_ACCOUNT_C_PASSWORD']
 const missing = required.filter((name) => !process.env[name])
