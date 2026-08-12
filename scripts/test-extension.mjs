@@ -4,6 +4,11 @@ import { Window } from 'happy-dom'
 
 const STORAGE_KEY = 'ecomindExtensionStateV2'
 const contentBundle = await readFile(new URL('../dist-extension/content.js', import.meta.url), 'utf8')
+const manifest = JSON.parse(await readFile(new URL('../dist-extension/manifest.json', import.meta.url), 'utf8'))
+assert.equal(manifest.manifest_version, 3)
+assert.deepEqual(manifest.permissions, ['activeTab', 'scripting', 'storage'])
+assert.equal('host_permissions' in manifest, false)
+assert.equal('content_scripts' in manifest, false, 'Injection must happen only after the popup action.')
 const persistedStorage = {}
 const runtimeMessages = []
 const runtimeListeners = []
@@ -12,148 +17,126 @@ const storageListeners = []
 globalThis.chrome = {
   runtime: {
     lastError: null,
-    onMessage: {
-      addListener(listener) {
-        runtimeListeners.push(listener)
-      },
-    },
-    sendMessage(message, callback) {
-      runtimeMessages.push(message)
-      callback?.()
-    },
+    onMessage: { addListener(listener) { runtimeListeners.push(listener) } },
+    sendMessage(message, callback) { runtimeMessages.push(message); callback?.() },
   },
   storage: {
     local: {
-      get(key, callback) {
-        callback({ [key]: persistedStorage[key] })
-      },
+      get(key, callback) { callback({ [key]: persistedStorage[key] }) },
       set(values, callback) {
         const changes = {}
-        for (const [key, value] of Object.entries(values)) {
-          changes[key] = { oldValue: persistedStorage[key], newValue: value }
-          persistedStorage[key] = value
-        }
+        for (const [key, value] of Object.entries(values)) { changes[key] = { oldValue: persistedStorage[key], newValue: value }; persistedStorage[key] = value }
         for (const listener of storageListeners) listener(changes, 'local')
         callback?.()
       },
     },
-    onChanged: {
-      addListener(listener) {
-        storageListeners.push(listener)
-      },
-    },
+    onChanged: { addListener(listener) { storageListeners.push(listener) } },
   },
 }
 
-function productMarkup() {
-  return `<!doctype html><html><body>
-    <section
-      data-ecomind-demo-product="true"
-      data-product-id="polyester-everyday-tee"
-      data-currency="GBP"
-      data-listing-text="Shell: 100% polyester. Packed in an individual protective polybag."
-      data-materials='[{"material":"Polyester","percentage":100}]'
-      data-recycled-content="0"
-      data-carbon-kg="5.2"
-      data-carbon-value-type="estimated"
-      data-packaging="plastic-mailer"
-      data-durability="62"
-      data-circularity="45"
-      data-sources='[{"label":"Sample product listing","type":"listing"},{"label":"EcoMind demo estimate","type":"ecomind-estimate"}]'
-      data-factor-sources='{}'
-      data-missing-fields='["Manufacturing location","Supplier lifecycle assessment","End-of-life guidance"]'
-      data-alternative-product-id="renew-loop-tee"
-    >
-      <div class="product-gallery"><img src="http://example.test/product.png" alt="Demo product"></div>
-      <div class="product-info"><h1>Northline Everyday Performance Tee</h1><p class="product-price">£14.99</p></div>
-      <div class="store-details"><p>A lightweight everyday T-shirt.</p><p>Shell: 100% polyester. Packed in an individual protective polybag.</p></div>
-    </section>
-  </body></html>`
-}
+async function fixture(name) { return readFile(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8') }
 
-function installDom(html) {
-  const window = new Window({ url: 'http://127.0.0.1:5173/#/demo' })
+function installDom(html, url) {
+  const window = new Window({ url })
   window.document.write(html)
   globalThis.window = window
   globalThis.document = window.document
+  globalThis.location = window.location
   globalThis.Event = window.Event
   globalThis.CustomEvent = window.CustomEvent
   globalThis.HTMLElement = window.HTMLElement
   globalThis.Node = window.Node
   globalThis.ShadowRoot = window.ShadowRoot
+  globalThis.MutationObserver = window.MutationObserver
+  globalThis.KeyboardEvent = window.KeyboardEvent
+  globalThis.FormData = window.FormData
+  globalThis.SubmitEvent = window.SubmitEvent
   return window
 }
 
-function executeContentScript() {
-  ;(0, eval)(contentBundle)
-}
+function executeContentScript() { ;(0, eval)(contentBundle) }
+async function settle() { await new Promise((resolve) => setTimeout(resolve, 40)) }
+function root(window) { return window.document.querySelector('#ecomind-extension-root')?.shadowRoot }
 
-async function waitForAnalysis() {
-  await new Promise((resolve) => setTimeout(resolve, 800))
-}
-
-const firstWindow = installDom(productMarkup())
-executeContentScript()
-await waitForAnalysis()
-
-const injectedRoot = firstWindow.document.querySelector('#ecomind-extension-root')
-assert.ok(injectedRoot?.shadowRoot, 'The content script must inject a Shadow DOM root.')
-assert.match(injectedRoot.shadowRoot.textContent, /Green Score/i)
-assert.match(injectedRoot.shadowRoot.textContent, /27\s*\/100/i)
+const threadlyWindow = installDom(await fixture('threadly.html'), 'https://ecomind-ai-two.vercel.app/#/demo')
+executeContentScript(); await settle()
+assert.ok(root(threadlyWindow), 'The content script must inject a Shadow DOM root on Threadly.')
+assert.match(root(threadlyWindow).textContent, /27\s*\/100/i)
+assert.doesNotMatch(root(threadlyWindow).textContent, /~27\s*\/100/i)
+assert.match(root(threadlyWindow).textContent, /Threadly demo/i)
+assert.match(root(threadlyWindow).textContent, /Record demo comparison/i)
 assert.equal(runtimeMessages.at(-1)?.state, 'success')
-
-injectedRoot.shadowRoot.querySelector('.save').click()
-await new Promise((resolve) => setTimeout(resolve, 20))
-
-assert.equal(persistedStorage[STORAGE_KEY].points, 0, 'A higher-impact save should not award points.')
+root(threadlyWindow).querySelector('.save').click(); await settle()
+assert.equal(persistedStorage[STORAGE_KEY].points, 0)
 assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 1)
-assert.equal(persistedStorage[STORAGE_KEY].wishlist[0].id, 'polyester-everyday-tee')
-
-injectedRoot.shadowRoot.querySelector('.compare').click()
-await new Promise((resolve) => setTimeout(resolve, 20))
-assert.equal(persistedStorage[STORAGE_KEY].points, 5)
-assert.match(injectedRoot.shadowRoot.querySelector('.comparison').className, /open/)
-
-injectedRoot.shadowRoot.querySelector('.save-alt').click()
-await new Promise((resolve) => setTimeout(resolve, 20))
+assert.equal(persistedStorage[STORAGE_KEY].wishlist[0].id, 'Threadly demo:polyester-everyday-tee')
+root(threadlyWindow).querySelector('.compare-threadly').click(); await settle()
+root(threadlyWindow).querySelector('.save-threadly').click(); await settle()
 assert.equal(persistedStorage[STORAGE_KEY].points, 10)
-assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 2)
-assert.equal(persistedStorage[STORAGE_KEY].wishlist[1].id, 'renew-loop-tee')
+assert.ok(persistedStorage[STORAGE_KEY].wishlist.some((item) => item.id === 'Threadly demo:renew-loop-tee'))
 
-const refreshedWindow = installDom(productMarkup())
-executeContentScript()
-await waitForAnalysis()
-refreshedWindow.document.querySelector('#ecomind-extension-root').shadowRoot.querySelector('.save').click()
-refreshedWindow.document.querySelector('#ecomind-extension-root').shadowRoot.querySelector('.compare').click()
-refreshedWindow.document.querySelector('#ecomind-extension-root').shadowRoot.querySelector('.save-alt').click()
-await new Promise((resolve) => setTimeout(resolve, 20))
+const amazonWindow = installDom(await fixture('amazon-full.html'), 'https://www.amazon.co.uk/example/dp/B000FIX001')
+executeContentScript(); await settle()
+assert.ok(root(amazonWindow), 'Amazon analysis must inject the real widget.')
+assert.match(root(amazonWindow).textContent, /Fixture Recycled Performance Tee/)
+assert.match(root(amazonWindow).textContent, /amazon/i)
+assert.match(root(amazonWindow).textContent, /Provisional Green Score/i)
+assert.match(root(amazonWindow).textContent, /EcoMind prototype material factors/i)
+assert.match(root(amazonWindow).textContent, /Estimated carbon[\s\S]*Not disclosed/i)
+assert.match(root(amazonWindow).textContent, /Help EcoMind complete this analysis/i)
+assert.equal(runtimeMessages.at(-1)?.state, 'missing-data')
+root(amazonWindow).querySelector('.save').click(); await settle()
+assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 3)
+assert.equal(persistedStorage[STORAGE_KEY].wishlist[2].retailer, 'Amazon UK')
+assert.ok(persistedStorage[STORAGE_KEY].wishlist[2].materials.length > 0)
 
-assert.equal(persistedStorage[STORAGE_KEY].points, 10, 'Repeated actions must not award points twice.')
-assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 2, 'Wishlist must persist without duplicates.')
-assert.match(refreshedWindow.document.documentElement.dataset.ecomindExtensionState, /polyester-everyday-tee/)
+const hmWindow = installDom(await fixture('hm-product.html'), 'https://www2.hm.com/en_us/productpage.1234567890.html')
+executeContentScript(); await settle()
+assert.match(root(hmWindow).textContent, /Parser: hm/i)
+assert.match(root(hmWindow).textContent, /Compare across retailers/i)
+root(hmWindow).querySelector('.compare-previous').click(); await settle()
+assert.equal(persistedStorage[STORAGE_KEY].points, 15)
+assert.equal(persistedStorage[STORAGE_KEY].activities[0].title, 'Real products compared')
+root(hmWindow).querySelector('.compare-previous').click(); await settle()
+assert.equal(persistedStorage[STORAGE_KEY].points, 15, 'Repeated comparison must not award points twice.')
 
-const cottonMarkup = productMarkup()
-  .replaceAll('polyester-everyday-tee', 'cotton-classic-tee')
-  .replace('data-recycled-content="0"', 'data-recycled-content="null"')
-  .replace('data-packaging="plastic-mailer"', 'data-packaging=""')
-  .replace('["Manufacturing location","Supplier lifecycle assessment","End-of-life guidance"]', '["Recycled content","Packaging type","Cotton origin","Supplier lifecycle assessment"]')
-const cottonWindow = installDom(cottonMarkup)
-executeContentScript()
-await waitForAnalysis()
-const cottonRoot = cottonWindow.document.querySelector('#ecomind-extension-root')
-assert.match(cottonRoot.shadowRoot.textContent, /Provisional estimate/i)
-assert.equal(runtimeMessages.at(-1)?.state, 'low-confidence')
+const manualWindow = installDom(await fixture('amazon-no-material.html'), 'https://www.amazon.com/example/dp/B000FIX003')
+executeContentScript(); await settle()
+assert.match(root(manualWindow).textContent, /Score withheld/i)
+assert.equal(runtimeMessages.at(-1)?.state, 'missing-data')
+const manualForm = root(manualWindow).querySelector('#manualForm')
+manualForm.querySelector('[name="materialText"]').value = '70% organic cotton, 30% linen'
+manualForm.querySelector('[name="recycled"]').value = '0'
+manualForm.querySelector('[name="packaging"]').value = 'Paper or card'
+manualForm.querySelector('[name="remember"]').checked = true
+manualForm.dispatchEvent(new manualWindow.Event('submit', { bubbles: true, cancelable: true })); await settle()
+assert.match(root(manualWindow).textContent, /Provided by user/i)
+assert.doesNotMatch(root(manualWindow).textContent, /Score withheld/i)
+assert.ok(Object.keys(persistedStorage[STORAGE_KEY].manualCorrections).some((key) => key.includes('B000FIX003')))
 
-const unsupportedWindow = installDom('<!doctype html><html><body><h1>Unsupported page</h1></body></html>')
-executeContentScript()
-await waitForAnalysis()
-assert.equal(unsupportedWindow.document.querySelector('#ecomind-extension-root'), null)
+const unsupportedWindow = installDom(await fixture('non-product.html'), 'https://magazine.example/article/care')
+executeContentScript(); await settle()
+assert.ok(root(unsupportedWindow), 'Manual fallback should be injected on an unsupported normal webpage.')
+assert.match(root(unsupportedWindow).textContent, /Score withheld/i)
+assert.match(root(unsupportedWindow).textContent, /Help EcoMind complete this analysis/i)
 assert.equal(runtimeMessages.at(-1)?.state, 'unsupported')
 
-const errorWindow = installDom(productMarkup().replace('<div class="product-info"><h1>Northline Everyday Performance Tee</h1><p class="product-price">£14.99</p></div>', '<div class="product-info"><p>Required fields intentionally removed.</p></div>'))
-executeContentScript()
-await waitForAnalysis()
-assert.equal(errorWindow.document.querySelector('#ecomind-extension-root'), null)
-assert.equal(runtimeMessages.at(-1)?.state, 'error')
+const categoryWindow = installDom(await fixture('non-clothing-product.html'), 'https://electronics.example/products/phone')
+executeContentScript(); await settle()
+assert.equal(runtimeMessages.at(-1)?.state, 'unsupported-category')
+assert.match(root(categoryWindow).textContent, /currently scores clothing and textile products/i)
 
-console.log('Extension integration checks passed: injection, score, comparison, honest rewards, persistence, unsupported and error states.')
+const variationWindow = installDom(await fixture('amazon-variation.html'), 'https://www.amazon.com/example/dp/B000BLUE01')
+executeContentScript(); await settle()
+variationWindow.document.querySelector('#productTitle').textContent = 'Fixture Tee — Red'
+await settle()
+assert.equal(runtimeMessages.at(-1)?.state, 'product-changed')
+assert.match(root(variationWindow).textContent, /Product changed · re-analyse/i)
+
+const refreshedAmazon = installDom(await fixture('amazon-full.html'), 'https://www.amazon.co.uk/example/dp/B000FIX001')
+executeContentScript(); await settle()
+assert.equal(persistedStorage[STORAGE_KEY].points, 15)
+assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 3)
+assert.ok(refreshedAmazon.document.documentElement.contains(refreshedAmazon.document.querySelector('#ecomind-extension-root')))
+
+console.log('Extension integration checks passed: Threadly, Amazon evidence, provisional score, manual correction, cross-retailer comparison, persistence, category rejection, unsupported and variation states.')

@@ -59,7 +59,8 @@ export function EcoMindProvider({ children }: { children: ReactNode }) {
       try {
         const extension = JSON.parse(raw) as ExtensionBridgeState
         setState((current) => {
-          const extensionIds = (extension.wishlist ?? []).map((item) => item.id)
+          const threadlyIds = new Set(['polyester-everyday-tee', 'cotton-classic-tee', 'renew-loop-tee'])
+          const extensionIds = (extension.wishlist ?? []).map((item) => item.id.replace(/^Threadly demo:/, '')).filter((id) => threadlyIds.has(id))
           const activityMap = new Map<string, ActivityItem>()
           ;[...(extension.activities ?? []), ...current.activities].forEach((activity) => activityMap.set(activity.id.replace(/-\d+$/, ''), activity))
           const activities = [...activityMap.values()].slice(0, 12)

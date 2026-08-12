@@ -1,57 +1,51 @@
-# EcoMind AI: two-minute demo script
+# EcoMind AI: real-product demo script
 
-## 0:00–0:20 — The problem
+## 0:00–0:20 — Set the context
 
-“Clothing listings rarely make environmental information easy to compare. EcoMind AI is a privacy-conscious browser extension that helps a shopper understand what a listing says, what it does not say and how the resulting estimate was calculated.”
+“Clothing information is scattered across descriptions, specification accordions and structured metadata. EcoMind AI is a privacy-conscious browser extension that turns the evidence on the active page into a transparent provisional result.”
 
-Open the landing page, then **Try the product demo**.
+Open a real H&M, Nike, Amazon or Shopify clothing product page. Keep Threadly ready in another tab as the stable offline fallback.
 
-## 0:20–0:55 — Activate and inspect
+## 0:20–0:50 — Activate locally
 
-“Threadly is our fictional store and every product is local sample data. EcoMind has not analysed anything yet. In the real extension the process starts only after I select **Analyse this product** in the popup.”
+Open the EcoMind popup.
 
-Activate the koala and wait for the drawer.
+“The popup can recognise a retailer from the current URL, but EcoMind has not read the page. Temporary access starts only when I click **Analyse this product**.”
 
-“Local simulated AI-assisted logic structures the product listing and exposes missing fields. It does not invent environmental facts and does not calculate the score.”
+Select the button, then open the injected koala.
 
-Expand **See what AI extracted**. Point out the exact listing text, structured fields and confidence. Then show the score breakdown and sources.
+“A retailer-specific adapter enriches shared Schema.org and visible-page fallbacks. No page contents are sent to a server.”
 
-“Our published deterministic formula produces 27 out of 100, grade D. Confidence is separate. Every source is labelled honestly as a sample listing or EcoMind demo estimate.”
+## 0:50–1:25 — Review evidence and uncertainty
 
-## 0:55–1:30 — Compare and save
+Expand **See what EcoMind extracted**.
 
-Select **Compare greener alternative**.
+“Every field keeps its original value, source location and reliability tier. Retailer evidence, page-text extraction, user values and EcoMind estimates never get merged into one unlabeled claim.”
 
-“EcoMind offers a local lower-impact match, shows its extra price and keeps the trade-off visible. Affordability and practical needs still matter.”
+Point out material composition, price and care/origin if present. Then show the breakdown.
 
-The comparison action earns +5 demo EcoPoints. Select **Save lower-impact option** and continue with the local demo profile if prompted.
+“Material evidence can feed a labelled prototype range. Carbon and durability stay unknown without evidence. The fixed formula calculates the midpoint; AI does not invent the score.”
 
-“Saving the alternative earns another +5. This records interest, not a purchase and not verified environmental savings. Analysing or buying more items earns nothing.”
+## 1:25–1:45 — Manual correction
 
-Optionally select **View greener product** to show that the store switches to the exact alternative.
+On a product with incomplete composition, open **Help EcoMind complete this analysis**.
 
-## 1:30–1:55 — Dashboard honesty
+Paste or enter the composition and rerun.
 
-Open the dashboard.
+“This value is visibly marked **Provided by user**. If I mark a field not disclosed, EcoMind keeps it unknown rather than zero.”
 
-“The dashboard reflects actions from this session: analyses, comparisons, saved alternatives and demo EcoPoints. The historical chart is explicitly an illustrative sample, not user history. Repair/reuse and mindful no-buy challenges are self-reported.”
+## 1:45–2:10 — Cross-retailer comparison
 
-Refresh to demonstrate local persistence.
+Select **Save for comparison**, open a second real product on another store and analyse it.
 
-## 1:55–2:10 — Close
+“EcoMind compares two products that I actually analysed. It does not pretend a fictional Threadly product is a real recommendation, and it stores only the extracted fields required for comparison.”
 
-“EcoMind processes the prototype locally, requests no browsing-history or payment access and supports only our controlled Threadly demo. Scores are estimates, not certifications. The methodology and data need independent expert review before real-world use.”
+Select **Record real-product comparison** to add +5 demo EcoPoints.
 
-## Optional credibility moments
+## 2:10–2:25 — Close honestly
 
-- Switch to the cotton sample to show `~51/100`, Low confidence, missing factors and the 35–66 provisional range.
-- Switch to the recycled/lyocell sample to show a complete High-confidence result.
-- Add `?debug=true` locally to demonstrate the forced analysis-error and retry state.
-- Open an unsupported page and use the extension popup to demonstrate the explicit unsupported state.
+“EcoMind requests no browsing-history, payment, cookie or all-sites permission. Retailer support is best-effort, the weights need expert validation, and every score is provisional—not a certification.”
 
-## Common questions
+## Reliable fallback
 
-- **Where is AI?** Deterministic local logic simulates extraction, structuring, uncertainty flags and explanation. The score itself comes only from the published formula.
-- **What data leaves the browser?** None in this prototype. There is no product-data server request or live AI API.
-- **Why a koala?** It gives friendly long-term feedback without framing another purchase as an environmental achievement.
-- **Are the values verified?** No. Products, values, rewards and source labels are transparent demo data; weights are not scientifically validated.
+If a live retailer blocks access or changes its DOM, open `https://ecomind-ai-two.vercel.app/#/demo`. Threadly preserves the deterministic presentation flow and regression fixture without implying Amazon branding.

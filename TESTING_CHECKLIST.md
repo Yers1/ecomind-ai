@@ -105,8 +105,8 @@
 - [ ] Chrome accepts `dist-extension` through **Load unpacked** without manifest errors.
 - [ ] The manifest requests only `activeTab`, `scripting` and `storage`.
 - [ ] No `history`, broad host or payment-related permission is requested.
-- [ ] The popup reports unsupported pages without injecting the widget.
-- [ ] The demo page initially contains no extension widget.
+- [ ] The popup distinguishes Amazon, known retailer, generic possible-product and restricted-page hints without reading page contents before activation.
+- [ ] A page initially contains no extension widget.
 - [ ] Selecting **Analyse this product** injects `content.js` through `chrome.scripting`.
 - [ ] The injected widget is rendered inside a Shadow DOM root.
 - [ ] Product name, price, description and material text come from the visible demo page.
@@ -118,3 +118,19 @@
 - [ ] Reopening the popup shows the persisted EcoPoints total.
 - [ ] The dashboard mirrors extension state when the content-script bridge is active.
 - [ ] No product data is sent over the network by the extension.
+
+## Real product parsers
+
+- [ ] `npm run test:parsers` passes every sanitized fixture.
+- [ ] Amazon US/UK selector fallbacks extract title, price, image, ASIN, features and labelled detail rows.
+- [ ] H&M, Nike and Shopify adapters enrich structured data without duplicating generic parsing.
+- [ ] Generic JSON-LD handles Product, ProductGroup and nested `@graph` records.
+- [ ] Open Graph and `itemprop` fallback works when JSON-LD is absent or malformed.
+- [ ] Material synonyms normalise while original evidence remains visible.
+- [ ] Percentage ranges or totals outside 95–105% are marked uncertain.
+- [ ] No material composition produces a withheld score and manual next action.
+- [ ] Manual corrections are labelled `Provided by user` and recalculate the result.
+- [ ] Non-clothing Product data is rejected by the clothing methodology.
+- [ ] A product title/identifier/variation change marks the result outdated.
+- [ ] Two saved real products from different retailers can be compared.
+- [ ] Only extracted comparison fields—not full webpage HTML—are persisted.

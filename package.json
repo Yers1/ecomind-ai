@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:extension": "node scripts/build-extension.mjs",
-    "test": "node scripts/test-core.mjs && npm run test:extension",
+    "test": "node scripts/test-core.mjs && node scripts/test-parsers.mjs && npm run test:extension",
+    "test:parsers": "node scripts/test-parsers.mjs",
     "test:extension": "npm run build:extension && node scripts/test-extension.mjs",
     "preview": "vite preview",
     "lint": "eslint ."

@@ -3,12 +3,19 @@ export const STORAGE_KEY = 'ecomindExtensionStateV2'
 export interface ExtensionWishlistItem {
   id: string
   productName: string
-  price: number
-  currency: string
-  score: number
-  grade: string
+  price: number | null
+  currency: string | null
+  score: number | null
+  scoreRange?: [number, number] | null
+  grade: string | null
   confidenceLevel: string
   alternativeAvailable: boolean
+  retailer?: string
+  url?: string
+  parserUsed?: string
+  materials?: Array<{ name: string; percentage: number | null; evidence: string }>
+  recycledContentPercentage?: number | null
+  packaging?: string | null
 }
 
 export interface ExtensionActivity {
@@ -24,8 +31,16 @@ export interface ExtensionState {
   wishlist: ExtensionWishlistItem[]
   completedActions: string[]
   activities: ExtensionActivity[]
+  manualCorrections: Record<string, {
+    title?: string | null
+    materialText?: string | null
+    recycledContentPercentage?: number | null
+    packaging?: string | null
+    markNotDisclosed?: Array<'materials' | 'recycledContent' | 'packaging'>
+  }>
   preferences: {
     showWidgetAfterAnalysis: boolean
+    diagnosticsEnabled: boolean
   }
 }
 
@@ -34,8 +49,10 @@ export const DEFAULT_EXTENSION_STATE: ExtensionState = {
   wishlist: [],
   completedActions: [],
   activities: [],
+  manualCorrections: {},
   preferences: {
     showWidgetAfterAnalysis: true,
+    diagnosticsEnabled: false,
   },
 }
 
@@ -49,6 +66,7 @@ export function readExtensionState(): Promise<ExtensionState> {
         wishlist: Array.isArray(saved?.wishlist) ? saved.wishlist : [],
         completedActions: Array.isArray(saved?.completedActions) ? saved.completedActions : [],
         activities: Array.isArray(saved?.activities) ? saved.activities : DEFAULT_EXTENSION_STATE.activities,
+        manualCorrections: saved?.manualCorrections && typeof saved.manualCorrections === 'object' ? saved.manualCorrections : {},
         preferences: {
           ...DEFAULT_EXTENSION_STATE.preferences,
           ...(saved?.preferences ?? {}),

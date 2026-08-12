@@ -26,6 +26,11 @@ button:focus-visible { outline: 3px solid rgba(22,115,77,.32); outline-offset: 2
 .status-card[data-state="analysing"] .status-icon { background: #6750a4; box-shadow: 0 0 0 4px #efebf8; animation: pulse 1s ease-in-out infinite; }
 .status-card[data-state="missing-data"] .status-icon, .status-card[data-state="low-confidence"] .status-icon { background: #a66a13; box-shadow: 0 0 0 4px #fff1d9; }
 .status-card[data-state="unsupported"] .status-icon, .status-card[data-state="error"] .status-icon { background: #a63b36; box-shadow: 0 0 0 4px #fbe7e5; }
+.status-card[data-state="restricted"] .status-icon, .status-card[data-state="access-error"] .status-icon, .status-card[data-state="unsupported-category"] .status-icon { background: #a63b36; box-shadow: 0 0 0 4px #fbe7e5; }
+.status-card[data-state="possible-product"] .status-icon, .status-card[data-state="product-changed"] .status-icon { background: #a66a13; box-shadow: 0 0 0 4px #fff1d9; }
+.retailer-line { margin-top: 11px; padding-top: 10px; display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #e5ebe7; font-size: .63rem; }
+.retailer-line span { color: #71817e; }
+.retailer-line b { max-width: 220px; color: #24453c; text-align: right; }
 .primary-button { width: 100%; min-height: 46px; margin-top: 12px; border: 0; border-radius: 12px; background: #16734d; color: #fff; font-weight: 750; cursor: pointer; box-shadow: 0 7px 18px rgba(22,115,77,.18); }
 .primary-button:hover:not(:disabled) { background: #0c5a3a; }
 .primary-button:active:not(:disabled) { transform: translateY(1px); }

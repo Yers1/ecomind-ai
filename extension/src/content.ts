@@ -1,297 +1,202 @@
-import {
-  readExtensionState,
-  STORAGE_KEY,
-  writeExtensionState,
-  type ExtensionState,
-  type ExtensionWishlistItem,
-} from './shared'
-import {
-  PRODUCT_RECORDS,
-  calculateConfidence,
-  calculateGreenScore,
-  formatScore,
-  packagingLabels,
-  type DataSource,
-  type MaterialShare,
-  type ProductRecord,
-  type ScoreResult,
-} from '../../shared/ecomind'
+import { PRODUCT_RECORDS, SCORE_WEIGHTS, calculateGreenScore, type ScoreFactorKey } from '../../shared/ecomind'
+import { applyManualCorrections, parseProductPage, type ManualCorrections, type ParsedProduct, type ParserDiagnostics } from '../../shared/parsers/parserRegistry'
+import { scoreRealProduct, type FactorResult, type RealProductScore } from '../../shared/realProductScoring'
+import { readExtensionState, STORAGE_KEY, writeExtensionState, type ExtensionState, type ExtensionWishlistItem } from './shared'
 
-type AnalysisState = 'ready' | 'analysing' | 'success' | 'missing-data' | 'low-confidence' | 'unsupported' | 'error'
-
-interface AnalysedProduct extends ProductRecord {
-  imageUrl: string
-}
-
-interface StatusMessage {
-  type: 'ECOMIND_STATUS_UPDATE' | 'ECOMIND_GET_STATUS'
-  state?: AnalysisState
-  detail?: string
-}
-
-const ALTERNATIVE_DATA: Record<string, AnalysedProduct> = {
-  'renew-loop-tee': { ...PRODUCT_RECORDS.find((product) => product.id === 'renew-loop-tee')!, imageUrl: '' },
-}
+type AnalysisState = 'ready' | 'analysing' | 'success' | 'missing-data' | 'low-confidence' | 'product-changed' | 'unsupported-category' | 'unsupported' | 'error'
+type DisplayAnalysis = { score: number | null; range: [number, number] | null; grade: string | null; confidence: 'High' | 'Medium' | 'Low'; factors: Array<{ key: ScoreFactorKey; label: string; result: FactorResult; weight: number }>; explanation: string; canScore: boolean }
+interface StatusMessage { type: 'ECOMIND_STATUS_UPDATE' | 'ECOMIND_GET_STATUS'; state?: AnalysisState; detail?: string }
 
 const ROOT_ID = 'ecomind-extension-root'
+const factorLabels: Record<ScoreFactorKey, string> = { materials: 'Material impact', carbon: 'Estimated carbon', recycled: 'Recycled content', durability: 'Durability and circularity', packaging: 'Packaging' }
+const knownMaterialOptions = ['Cotton', 'Organic cotton', 'Recycled cotton', 'Polyester', 'Recycled polyester', 'Nylon', 'Recycled nylon', 'Elastane', 'Linen', 'Hemp', 'Wool', 'Recycled wool', 'Viscose', 'Modal', 'Lyocell', 'Acrylic', 'Silk', 'Leather']
 
 let analysisState: AnalysisState = 'ready'
 let analysisDetail = 'Ready to analyse'
-let currentProduct: AnalysedProduct | null = null
-let currentResult: ScoreResult | null = null
+let currentProduct: ParsedProduct | null = null
+let currentAnalysis: DisplayAnalysis | null = null
+let currentDiagnostics: ParserDiagnostics | null = null
 let shadow: ShadowRoot | null = null
+let initialSignature = ''
+let variationObserver: MutationObserver | null = null
 
-function escapeHtml(value: string | number) {
-  return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]!)
-}
-
-function parseMaterials(listingText: string, fallback?: string): MaterialShare[] {
-  const materials: MaterialShare[] = []
-  const pattern = /(\d{1,3})%\s*(recycled cotton|polyester|cotton|lyocell)/gi
-  for (const match of listingText.matchAll(pattern)) {
-    const raw = match[2].toLowerCase()
-    const material = raw === 'recycled cotton' ? 'Recycled cotton' : raw.charAt(0).toUpperCase() + raw.slice(1)
-    materials.push({ material, percentage: Number(match[1]) })
-  }
-  if (materials.length || !fallback) return materials
-  try { return JSON.parse(fallback) as MaterialShare[] } catch { return [] }
-}
-
-function numberOrNull(value?: string) {
-  if (!value || value === 'null') return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function jsonValue<T>(value: string | undefined, fallback: T): T {
-  if (!value) return fallback
-  try { return JSON.parse(value) as T } catch { return fallback }
-}
-
-function extractProductFromPage(): AnalysedProduct | null {
-  const container = document.querySelector<HTMLElement>('[data-ecomind-demo-product="true"]')
-  if (!container) return null
-  const id = container.dataset.productId ?? ''
-  const local = PRODUCT_RECORDS.find((item) => item.id === id)
-  if (!local) throw new Error('This demo product is not in the local extension dataset.')
-  const productName = container.querySelector<HTMLElement>('.product-info h1')?.textContent?.trim() ?? ''
-  const priceText = container.querySelector<HTMLElement>('.product-price')?.textContent ?? ''
-  const price = Number(priceText.replace(/[^0-9.]/g, ''))
-  const detailParagraphs = container.querySelectorAll<HTMLElement>('.store-details p')
-  const description = detailParagraphs[0]?.textContent?.trim() ?? ''
-  const listingText = detailParagraphs[1]?.textContent?.trim() ?? container.dataset.listingText ?? ''
-  const materials = parseMaterials(listingText, container.dataset.materials)
-  const missingFields = jsonValue<string[]>(container.dataset.missingFields, [])
-  if (!productName || !Number.isFinite(price)) throw new Error('Required product name or price is unavailable.')
-  const estimatedCarbonKg = numberOrNull(container.dataset.carbonKg)
-  const extracted: AnalysedProduct = {
-    ...local,
-    productName,
-    price,
-    currency: container.dataset.currency === 'GBP' ? 'GBP' : local.currency,
-    description,
-    listingText,
-    imageUrl: container.querySelector<HTMLImageElement>('.product-gallery__main img')?.src ?? '',
-    materials,
-    recycledContentPercentage: numberOrNull(container.dataset.recycledContent),
-    estimatedCarbonKg,
-    carbonValueType: (container.dataset.carbonValueType as AnalysedProduct['carbonValueType']) ?? local.carbonValueType,
-    packagingType: (container.dataset.packaging as AnalysedProduct['packagingType']) || null,
-    durabilityRating: numberOrNull(container.dataset.durability) ?? local.durabilityRating,
-    circularityRating: numberOrNull(container.dataset.circularity) ?? local.circularityRating,
-    sources: jsonValue<DataSource[]>(container.dataset.sources, local.sources),
-    factorSources: jsonValue(container.dataset.factorSources, local.factorSources),
-    missingFields,
-    alternativeProductId: container.dataset.alternativeProductId || null,
-    confidenceLevel: local.confidenceLevel,
-  }
-  extracted.confidenceLevel = calculateConfidence(extracted)
-  return extracted
-}
+const escapeHtml = (value: string | number | null | undefined) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]!)
+const formatMoney = (product: ParsedProduct) => product.price === null ? 'Price not detected' : `${product.currency ?? ''} ${product.price.toFixed(2)}`.trim()
+const productKey = (product: ParsedProduct) => product.productId ? `${product.retailer}:${product.productId}` : `${product.retailer}:${product.url.split('#')[0]}`
+const currentPageSignature = () => `${location.pathname}${location.search}|${document.querySelector('#productTitle,main h1,h1')?.textContent?.trim() ?? ''}|${document.querySelector<HTMLInputElement>('input#ASIN')?.value ?? ''}`
 
 function notifyPopup(state: AnalysisState, detail: string) {
-  analysisState = state
-  analysisDetail = detail
+  analysisState = state; analysisDetail = detail
   chrome.runtime.sendMessage({ type: 'ECOMIND_STATUS_UPDATE', state, detail } satisfies StatusMessage, () => void chrome.runtime.lastError)
 }
 
-async function broadcastStorage(state?: ExtensionState) {
-  const stored = state ?? await readExtensionState()
-  document.documentElement.dataset.ecomindExtensionState = JSON.stringify(stored)
-  document.dispatchEvent(new Event('ecomind-extension-storage'))
-  shadow?.querySelector<HTMLElement>('[data-points]')?.replaceChildren(String(stored.points))
-}
-
 function koalaMarkup() {
-  return `<span class="koala" role="img" aria-label="EcoMind koala"><i class="ear left"></i><i class="ear right"></i><i class="face"><b class="eye left"></b><b class="eye right"></b><b class="nose"></b></i><i class="leaf"></i></span>`
+  return '<span class="koala" role="img" aria-label="EcoMind koala"><i class="ear left"></i><i class="ear right"></i><i class="face"><b class="eye left"></b><b class="eye right"></b><b class="nose"></b></i><i class="leaf"></i></span>'
 }
 
-const extensionStyles = `
-  :host{all:initial;font-family:"Segoe UI",system-ui,sans-serif;color:#102a2c}*{box-sizing:border-box}button{font:inherit}button:focus-visible,summary:focus-visible{outline:3px solid rgba(22,115,77,.34);outline-offset:3px}
-  .widget{position:fixed;z-index:2147483600;right:22px;bottom:22px;min-width:292px;min-height:76px;padding:9px 13px 9px 9px;display:flex;align-items:center;gap:11px;border:0;border-radius:17px;background:#102f30;color:#f5fff9;box-shadow:0 20px 52px rgba(8,35,31,.32);cursor:pointer;text-align:left;transition:transform .18s ease,box-shadow .18s ease}.widget:hover{transform:translateY(-3px);box-shadow:0 24px 60px rgba(8,35,31,.38)}.widget:active{transform:translateY(1px)}
-  .widget .copy{display:flex;flex:1;flex-direction:column;gap:2px}.widget .copy strong{font-size:13px;color:#fff}.widget .copy small{font-size:10px;color:#abc8bb}.widget .points{font-size:10px;color:#8ecbae}.widget .score{display:grid;grid-template-columns:auto auto;align-items:baseline;padding-right:11px;border-right:1px solid rgba(255,255,255,.17)}.widget .score strong{font-size:22px}.widget .score small{font-size:9px;color:#9fc0b1}.widget .score b{grid-column:1/span 2;width:23px;height:20px;display:grid;place-items:center;border-radius:6px;background:#d9f5e3;color:#135b3d;font-size:10px}.widget .arrow{font-size:18px;color:#88d8aa}
-  .koala{position:relative;width:56px;height:56px;display:inline-block;flex:none}.koala .face{position:absolute;z-index:2;inset:9px 6px 2px;border-radius:48%;background:#a9b6b1;border:1px solid #657773}.koala .ear{position:absolute;z-index:1;top:6px;width:21px;height:24px;border-radius:50%;background:#879995;border:1px solid #657773;box-shadow:inset 0 0 0 5px #c8d0cd}.koala .ear.left{left:0;transform:rotate(-10deg)}.koala .ear.right{right:0;transform:rotate(10deg)}.koala .eye{position:absolute;top:18px;width:5px;height:6px;border-radius:50%;background:#172d2d}.koala .eye.left{left:12px}.koala .eye.right{right:12px}.koala .nose{position:absolute;top:25px;left:50%;width:12px;height:14px;transform:translateX(-50%);border-radius:45% 45% 55% 55%;background:#243a39}.koala .leaf{position:absolute;z-index:4;right:-1px;top:0;width:16px;height:10px;border-radius:80% 10%;transform:rotate(-24deg);background:#16734d}
-  .layer{position:fixed;z-index:2147483601;inset:0;background:rgba(9,30,29,.49);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .22s ease}.layer.open{opacity:1;pointer-events:auto}.drawer{position:absolute;top:0;right:0;width:min(100%,590px);height:100%;display:flex;flex-direction:column;background:#f5f8f6;box-shadow:-20px 0 50px rgba(8,35,31,.23);transform:translateX(100%);transition:transform .3s cubic-bezier(.16,1,.3,1)}.layer.open .drawer{transform:translateX(0)}
-  .drawer-header{height:68px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d9e3dd;background:#fff}.drawer-header>div{display:flex;align-items:center;gap:9px}.drawer-header strong{font-size:14px}.confidence{font-size:10px;font-weight:750;color:#7d610d}.confidence.high{color:#0c5a3a}.confidence.low{color:#a63b36}.close{width:40px;height:40px;display:grid;place-items:center;border:1px solid #d4dfd8;border-radius:11px;background:#fff;color:#183432;font-size:22px;cursor:pointer}.drawer-body{flex:1;overflow:auto;padding:20px 20px 100px}.product{display:grid;grid-template-columns:68px 1fr;align-items:center;gap:13px}.product img{width:68px;height:68px;object-fit:cover;border:1px solid #d9e3dd;border-radius:11px}.product span{font-size:10px;color:#71817e}.product h2{margin:3px 0;font-size:17px;line-height:1.15;letter-spacing:-.025em}.product b{font-size:13px}
-  .score-hero{margin-top:17px;padding:19px;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:18px;border:1px solid #ead5ad;border-radius:16px;background:#fff7e9}.big-score{display:grid;grid-template-columns:auto auto;align-items:baseline;color:#a24733}.big-score strong{font-size:48px;line-height:1}.big-score small{font-size:11px}.big-score b{grid-column:1/span 2;width:34px;height:32px;display:grid;place-items:center;border-radius:9px;background:#a24733;color:#fff}.score-copy>span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#0c5a3a}.score-copy h3{margin:5px 0;font-size:15px;line-height:1.3}.score-copy p{margin:0;font-size:10px;line-height:1.45;color:#637674}
-  .ai-note{margin-top:10px;padding:11px 12px;border:1px solid #ded9ec;border-radius:11px;background:#f3f0f9;color:#62527e;font-size:10px;line-height:1.45}.section{margin-top:24px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.section-title h3{margin:0;font-size:14px}.section-title span{font-size:9px;color:#73837f}.breakdown{display:grid;gap:6px}.factor{padding:11px 12px;display:grid;grid-template-columns:1fr auto;gap:4px;border:1px solid #d9e3dd;border-radius:11px;background:#fff}.factor strong{font-size:11px}.factor b{font-size:11px}.factor p{grid-column:1/span 2;margin:0;color:#687976;font-size:9px;line-height:1.35}.factor small{grid-column:2;color:#83918d;font-size:8px}.evidence{display:grid;grid-template-columns:1fr 1fr;gap:8px}.evidence>div{padding:13px;border-radius:11px}.used{border:1px solid #cce5d7;background:#edf8f1}.missing{border:1px solid #ead8ba;background:#fff5e7}.evidence h4{margin:0;font-size:11px}.evidence ul{margin:8px 0 0;padding-left:15px;color:#5e6f6b}.evidence li{margin:4px 0;font-size:9px;line-height:1.3}.missing-note{margin:8px 0 0;color:#76532e;font-size:9px;line-height:1.4}.sources{display:flex;flex-wrap:wrap;gap:5px}.sources span{padding:6px 8px;border:1px solid #d9e3dd;border-radius:8px;background:#fff;color:#5f716d;font-size:9px}
-  details{margin-top:18px;border:1px solid #d9e3dd;border-radius:11px;background:#fff}summary{padding:12px;font-size:11px;font-weight:750;cursor:pointer}details p{padding:0 12px 12px;margin:0;color:#5d6f6b;font-size:9px;line-height:1.5}code{color:#0c5a3a}.extraction blockquote{margin:0 12px 10px;padding:10px;background:#f5f3fa;color:#574b70;font-size:9px;line-height:1.45}.extract-grid{margin:0 12px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px}.extract-grid div{padding:7px;border:1px solid #e2ddec;border-radius:8px}.extract-grid span{display:block;color:#7a6b91;font-size:8px}.extract-grid b{font-size:9px}.alternative{margin-top:22px;padding:15px;border-radius:16px;background:#102f30;color:#f3fff8}.alternative>span{font-size:9px;color:#8bd4aa;font-weight:750}.alternative h3{margin:5px 0 6px;font-size:14px;color:#fff}.alternative p{margin:0;color:#aac7ba;font-size:9px;line-height:1.45}.alt-metrics{margin-top:11px;padding:10px;display:grid;grid-template-columns:1fr auto;gap:5px;border-radius:10px;background:rgba(255,255,255,.08)}.alt-metrics strong{font-size:11px}.alt-metrics b{color:#8edcaf}.alt-metrics span{grid-column:1/span 2;color:#bad0c7;font-size:9px}.alt-tradeoff{margin-top:8px!important;color:#d3e5dc!important}.comparison{display:none;margin-top:12px;padding:13px;border:1px solid #cce5d7;border-radius:11px;background:#fff}.comparison.open{display:block}.comparison h4{margin:0 0 9px;font-size:12px}.comparison-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:7px 0;border-top:1px solid #e1e8e3;font-size:9px}.comparison-row strong{color:#5c7068}.comparison-row span:last-child{color:#0c5a3a;font-weight:750}.comparison-actions{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px}.comparison-actions button{min-height:38px;border-radius:9px;font-size:9px;font-weight:750;cursor:pointer}.save-alt{border:0;background:#16734d;color:#fff}.view-alt{border:1px solid #9fb9aa;background:#fff;color:#134a37}.disclaimer{margin:17px 15px 0;color:#778682;font-size:9px;line-height:1.5;text-align:center}
-  .drawer-footer{position:absolute;right:0;bottom:0;left:0;padding:12px 20px;display:grid;grid-template-columns:.7fr 1.3fr;gap:8px;border-top:1px solid #d9e3dd;background:rgba(255,255,255,.96)}.drawer-footer button{min-height:45px;border-radius:11px;font-weight:750;cursor:pointer}.save{border:1px solid #cbd8d0;background:#fff;color:#173b32}.compare{border:0;background:#16734d;color:#fff}.save:hover{border-color:#16734d}.compare:hover{background:#0c5a3a}.success-note{position:fixed;z-index:2147483602;right:22px;bottom:110px;max-width:330px;padding:12px 14px;border-radius:11px;background:#173b32;color:#fff;box-shadow:0 14px 32px rgba(8,35,31,.28);font-size:11px}
-  @media(max-width:620px){.widget{right:10px;bottom:10px;left:10px}.drawer{width:100%}.drawer-body{padding-inline:13px}.score-hero{grid-template-columns:1fr}.evidence{grid-template-columns:1fr}.drawer-footer{padding-inline:13px}}
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-`
+function displayAnalysis(product: ParsedProduct): DisplayAnalysis {
+  if (product.parserUsed === 'threadly' && product.productId) {
+    const record = PRODUCT_RECORDS.find((item) => item.id === product.productId)
+    if (record) {
+      const result = calculateGreenScore(record)
+      const factors = result.breakdown.map((item) => ({ key: item.key, label: item.label, weight: item.weight, result: item.score === null ? { status: 'unknown' as const, score: null, evidence: [] } : { status: 'known' as const, score: Math.round(item.score), evidence: [] } }))
+      return { score: result.score, range: result.range ? [result.range.min, result.range.max] : null, grade: result.grade, confidence: record.confidenceLevel, factors, explanation: result.explanation, canScore: true }
+    }
+  }
+  const result: RealProductScore = scoreRealProduct(product)
+  return { score: result.score, range: result.range, grade: result.grade, confidence: result.confidence, factors: (Object.keys(result.factors) as ScoreFactorKey[]).map((key) => ({ key, label: factorLabels[key], result: result.factors[key], weight: SCORE_WEIGHTS[key] })), explanation: result.explanation, canScore: result.canScore }
+}
 
-function renderExtension(product: AnalysedProduct, result: ScoreResult, state: ExtensionState) {
+function reliabilityLabel(sourceType: string) {
+  if (sourceType === 'json-ld' || sourceType === 'amazon-selector') return 'Verified page evidence'
+  if (sourceType === 'manual-user-input') return 'User-provided'
+  if (sourceType === 'ecomind-estimate') return 'EcoMind estimate'
+  return 'Page-text extraction'
+}
+
+function factorMarkup(item: DisplayAnalysis['factors'][number]) {
+  const factor = item.result
+  const value = factor.status === 'unknown' ? 'Not disclosed' : factor.status === 'estimated' ? `~${factor.score}/100 · ${factor.range[0]}–${factor.range[1]}` : `${factor.score}/100`
+  const evidence = factor.evidence.map((source) => `${source.sourceLabel}: ${source.value}`).join(' · ')
+  return `<article class="factor"><strong>${escapeHtml(item.label)}</strong><b>${escapeHtml(value)}</b><p>${escapeHtml(evidence || (factor.status === 'unknown' ? 'No supporting evidence found on this page.' : 'Directly disclosed product evidence.'))}</p><small>${Math.round(item.weight * 100)}% weight · ${factor.status}</small></article>`
+}
+
+function extractedMarkup(product: ParsedProduct) {
+  const evidenceRows = product.evidence.length ? product.evidence.map((item) => `<li><div><strong>${escapeHtml(item.field)}</strong><span>${escapeHtml(item.value ?? 'Not disclosed')}</span></div><em>${escapeHtml(reliabilityLabel(item.sourceType))} · ${escapeHtml(item.sourceLabel)} · ${escapeHtml(item.confidence)}${item.selector ? ` · ${escapeHtml(item.selector)}` : ''}</em></li>`).join('') : '<li><div><strong>No automatic evidence</strong><span>Use the correction panel below.</span></div><em>Not disclosed</em></li>'
+  return `<details class="extraction"><summary>See what EcoMind extracted</summary><p class="extract-intro">Original page evidence stays beside every normalised value. Estimates are listed separately.</p><ul class="evidence-list">${evidenceRows}</ul><div class="normalised"><div><span>Materials</span><b>${escapeHtml(product.materials.map((item) => `${item.percentage ?? '?'}% ${item.name}`).join(', ') || 'Not disclosed')}</b></div><div><span>Recycled content</span><b>${product.recycledContentPercentage === null ? 'Not disclosed' : `${product.recycledContentPercentage}%`}</b></div><div><span>Packaging</span><b>${escapeHtml(product.packaging ?? 'Not disclosed')}</b></div><div><span>Weight</span><b>${product.weightGrams === null ? 'Not disclosed' : `${Math.round(product.weightGrams)} g`}</b></div><div><span>Country of origin</span><b>${escapeHtml(product.countryOfOrigin ?? 'Not disclosed')}</b></div><div><span>Care</span><b>${escapeHtml(product.careInstructions ?? 'Not disclosed')}</b></div></div></details>`
+}
+
+function manualMarkup(product: ParsedProduct) {
+  return `<details class="manual"><summary>Help EcoMind complete this analysis</summary><form id="manualForm"><label>Product title<input name="title" value="${escapeHtml(product.title)}" autocomplete="off"></label><label>Material-composition text<textarea name="materialText" rows="3" placeholder="Example: 60% organic cotton, 40% recycled polyester"></textarea></label><div class="manual-grid"><label>Material<select name="material"><option value="">Select if useful</option>${knownMaterialOptions.map((item) => `<option>${item}</option>`).join('')}</select></label><label>Percentage<input name="materialPercentage" type="number" min="0" max="100" inputmode="decimal"></label><label>Recycled content %<input name="recycled" type="number" min="0" max="100" inputmode="decimal"></label><label>Packaging<select name="packaging"><option value="">Not disclosed</option><option>Plastic polybag</option><option>Paper or card</option><option>Recycled packaging</option><option>Plastic-free minimal packaging</option></select></label></div><fieldset><legend>Explicitly mark as not disclosed</legend><label><input type="checkbox" name="missingMaterials"> Materials</label><label><input type="checkbox" name="missingRecycled"> Recycled content</label><label><input type="checkbox" name="missingPackaging"> Packaging</label></fieldset><label class="save-correction"><input type="checkbox" name="remember"> Save these corrections for this product only</label><button type="submit">Re-run provisional score</button><p>Manual values are labelled “Provided by user” and never represented as retailer evidence.</p></form></details>`
+}
+
+function comparisonMarkup(state: ExtensionState, product: ParsedProduct) {
+  if (product.parserUsed === 'threadly') {
+    const record = PRODUCT_RECORDS.find((item) => item.id === product.productId)
+    const alternative = PRODUCT_RECORDS.find((item) => item.id === record?.alternativeProductId)
+    if (!alternative) return '<section class="guidance"><h3>General improvement guidance</h3><p>Repair, reuse, buy second-hand or look for stronger disclosed evidence before purchasing.</p></section>'
+    const alternativeScore = calculateGreenScore(alternative)
+    return `<section class="guidance"><span>THREADLY DEMO ALTERNATIVE</span><h3>${escapeHtml(alternative.productName)}</h3><p>This fictional option remains available only in the controlled Threadly demo. It is never presented as a real retailer listing.</p><div class="demo-alternative"><b>${alternativeScore.score}/100 · ${escapeHtml(alternativeScore.grade)}</b><small>£${alternative.price.toFixed(2)} · ${alternative.recycledContentPercentage ?? 0}% recycled content</small><small>${escapeHtml(alternative.tradeOff)}</small></div><div class="guidance-actions"><button class="compare-threadly" type="button">Record demo comparison</button><button class="save-threadly" type="button">Save demo alternative</button></div></section>`
+  }
+  const previous = [...state.wishlist].reverse().find((item) => item.url && item.id !== productKey(product) && item.materials?.length)
+  if (!previous) return '<section class="guidance"><h3>Compare real evidence, not fictional products</h3><p>Save this product for comparison, open another clothing product on any supported store, then analyse it. EcoMind stores only the extracted comparison fields—not the webpage.</p></section>'
+  return `<section class="real-compare"><span>PREVIOUSLY ANALYSED PRODUCT</span><h3>Compare across retailers</h3><div class="compare-grid"><div><b>${escapeHtml(product.title)}</b><small>${escapeHtml(product.retailer)}</small><strong>${currentAnalysis?.score === null ? 'Withheld' : `~${currentAnalysis?.score}/100`}</strong></div><div><b>${escapeHtml(previous.productName)}</b><small>${escapeHtml(previous.retailer ?? 'Previous retailer')}</small><strong>${previous.score === null ? 'Withheld' : `~${previous.score}/100`}</strong></div></div><button class="compare-previous" type="button" data-previous="${escapeHtml(previous.id)}">Record real-product comparison</button></section>`
+}
+
+const styles = `:host{all:initial;font-family:"Segoe UI",system-ui,sans-serif;color:#102a2c}*{box-sizing:border-box}button,input,textarea,select{font:inherit}button:focus-visible,summary:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(22,115,77,.34);outline-offset:2px}.widget{position:fixed;z-index:2147483600;right:22px;bottom:22px;min-width:300px;min-height:76px;padding:9px 13px 9px 9px;display:flex;align-items:center;gap:11px;border:0;border-radius:16px;background:#102f30;color:#f5fff9;box-shadow:0 8px 24px rgba(8,35,31,.3);cursor:pointer;text-align:left}.widget .copy{display:flex;flex:1;flex-direction:column}.widget .copy strong{font-size:13px}.widget .copy small{font-size:10px;color:#abc8bb}.widget .score{min-width:58px;padding-right:10px;border-right:1px solid rgba(255,255,255,.2)}.widget .score strong{font-size:20px}.widget .score small{font-size:9px;color:#aac5ba}.widget .score b{display:block;margin-top:2px;color:#8edcaf;font-size:9px}.koala{position:relative;width:54px;height:54px;display:inline-block;flex:none}.koala .face{position:absolute;z-index:2;inset:9px 6px 2px;border-radius:48%;background:#a9b6b1;border:1px solid #657773}.koala .ear{position:absolute;z-index:1;top:6px;width:20px;height:23px;border-radius:50%;background:#879995;border:1px solid #657773;box-shadow:inset 0 0 0 5px #c8d0cd}.koala .ear.left{left:0}.koala .ear.right{right:0}.koala .eye{position:absolute;top:18px;width:5px;height:6px;border-radius:50%;background:#172d2d}.koala .eye.left{left:11px}.koala .eye.right{right:11px}.koala .nose{position:absolute;top:24px;left:50%;width:12px;height:14px;transform:translateX(-50%);border-radius:45%;background:#243a39}.koala .leaf{position:absolute;z-index:4;right:0;top:0;width:15px;height:10px;border-radius:80% 10%;transform:rotate(-24deg);background:#16734d}.layer{position:fixed;z-index:2147483601;inset:0;background:rgba(9,30,29,.5);opacity:0;pointer-events:none}.layer.open{opacity:1;pointer-events:auto}.drawer{position:absolute;right:0;top:0;width:min(100%,620px);height:100%;display:flex;flex-direction:column;background:#f5f8f6;box-shadow:-8px 0 24px rgba(8,35,31,.22);transform:translateX(100%);transition:transform .22s cubic-bezier(.16,1,.3,1)}.layer.open .drawer{transform:none}.drawer-header{height:68px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d9e3dd;background:#fff}.drawer-header div{display:flex;flex-direction:column}.drawer-header span{font-size:9px;color:#60736e}.close{width:40px;height:40px;border:1px solid #d4dfd8;border-radius:11px;background:#fff;font-size:22px}.drawer-body{flex:1;overflow:auto;padding:20px 20px 94px}.product{display:flex;gap:13px;align-items:center}.product img{width:72px;height:72px;border-radius:11px;object-fit:cover}.product span,.meta-row{font-size:9px;color:#647873}.product h2{margin:3px 0;font-size:18px;line-height:1.2}.product b{font-size:12px}.meta-row{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}.meta-row span{padding:5px 7px;border-radius:7px;background:#e8efeb}.score-hero{margin-top:16px;padding:17px;display:grid;grid-template-columns:auto 1fr;gap:16px;border-radius:14px;background:#fff3dc}.big-score strong{font-size:43px}.big-score small{font-size:10px}.big-score b{display:block;width:28px;padding:4px;border-radius:6px;background:#9a5437;color:#fff;text-align:center}.score-copy h3{margin:2px 0 5px;font-size:14px}.score-copy p{margin:0;font-size:10px;line-height:1.45;color:#60716e}.local-note{margin-top:9px;padding:10px 11px;border-radius:10px;background:#f0edf7;color:#63567b;font-size:10px;line-height:1.45}.section{margin-top:22px}.section h3{margin:0 0 9px;font-size:14px}.breakdown{display:grid;gap:6px}.factor{padding:11px 12px;display:grid;grid-template-columns:1fr auto;gap:4px;border:1px solid #d9e3dd;border-radius:11px;background:#fff}.factor strong,.factor b{font-size:11px}.factor p{grid-column:1/span 2;margin:0;color:#687976;font-size:9px;line-height:1.4}.factor small{grid-column:1/span 2;color:#81908b;font-size:8px}details{margin-top:15px;border:1px solid #d9e3dd;border-radius:11px;background:#fff}summary{padding:12px;font-size:11px;font-weight:750;cursor:pointer}.extract-intro,details>p{margin:0;padding:0 12px 12px;color:#60716e;font-size:9px;line-height:1.5}.evidence-list{margin:0;padding:0 12px 10px;list-style:none}.evidence-list li{padding:8px 0;border-top:1px solid #e4eae6}.evidence-list div{display:flex;justify-content:space-between;gap:10px;font-size:9px}.evidence-list em{display:block;margin-top:3px;color:#72827e;font-size:8px;font-style:normal}.normalised{padding:0 12px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}.normalised div{padding:8px;border-radius:8px;background:#edf4f0}.normalised span{display:block;color:#71817e;font-size:8px}.normalised b{font-size:9px}.missing{margin-top:16px;padding:12px;border-radius:11px;background:#fff3df}.missing h3{margin:0;font-size:12px}.missing ul{margin:7px 0 0;padding-left:17px;font-size:9px}.missing p{margin:7px 0 0;font-size:9px;color:#76532e}.manual form{padding:0 12px 12px}.manual label{display:grid;gap:4px;margin-top:8px;color:#536a64;font-size:9px}.manual input,.manual textarea,.manual select{width:100%;padding:8px;border:1px solid #bdcbc4;border-radius:8px;background:#fff;color:#17322e;font-size:10px}.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.manual fieldset{margin-top:9px;padding:8px;border:1px solid #d9e3dd;border-radius:8px}.manual fieldset label,.save-correction{display:flex!important;align-items:center;gap:6px}.manual input[type="checkbox"]{width:auto}.manual button,.compare-previous,.guidance-actions button{width:100%;min-height:40px;margin-top:10px;border:0;border-radius:9px;background:#16734d;color:#fff;font-size:10px;font-weight:750}.manual form p{margin:7px 0 0;color:#71817e;font-size:8px}.guidance,.real-compare{margin-top:19px;padding:14px;border-radius:13px;background:#102f30;color:#fff}.guidance span,.real-compare>span{color:#8edcaf;font-size:8px}.guidance h3,.real-compare h3{margin:4px 0 6px;font-size:13px}.guidance p{margin:0;color:#b7cdc3;font-size:9px;line-height:1.45}.demo-alternative{margin-top:10px;padding:10px;border-radius:8px;background:rgba(255,255,255,.08)}.demo-alternative b,.demo-alternative small{display:block}.demo-alternative b{color:#8edcaf;font-size:12px}.demo-alternative small{margin-top:3px;color:#b7cdc3;font-size:9px}.guidance-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.guidance-actions .save-threadly{background:#edf7f1;color:#124b38}.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.compare-grid div{padding:9px;border-radius:8px;background:rgba(255,255,255,.08)}.compare-grid b,.compare-grid small,.compare-grid strong{display:block;font-size:9px}.compare-grid small{color:#b7cdc3}.compare-grid strong{margin-top:5px;color:#8edcaf}.diagnostics{font-family:ui-monospace,monospace}.diagnostics pre{margin:0;padding:0 12px 12px;white-space:pre-wrap;word-break:break-word;font-size:8px}.disclaimer{margin:16px 0 0;color:#72827e;font-size:9px;line-height:1.5;text-align:center}.drawer-footer{position:absolute;left:0;right:0;bottom:0;padding:12px 20px;border-top:1px solid #d9e3dd;background:#fff}.drawer-footer button{width:100%;min-height:44px;border:0;border-radius:10px;background:#16734d;color:#fff;font-weight:750}.toast{position:fixed;z-index:2147483602;right:22px;bottom:110px;max-width:330px;padding:12px;border-radius:10px;background:#173b32;color:#fff;font-size:10px}@media(max-width:620px){.widget{right:10px;left:10px;bottom:10px}.drawer{width:100%}.drawer-body{padding-inline:13px}.score-hero{grid-template-columns:1fr}.normalised,.manual-grid,.guidance-actions{grid-template-columns:1fr}.drawer-footer{padding-inline:13px}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`
+
+function renderExtension(product: ParsedProduct, analysis: DisplayAnalysis, state: ExtensionState, diagnostics: ParserDiagnostics) {
   document.getElementById(ROOT_ID)?.remove()
-  const host = document.createElement('div')
-  host.id = ROOT_ID
-  host.setAttribute('aria-label', 'EcoMind AI extension analysis')
-  document.documentElement.appendChild(host)
+  const host = document.createElement('div'); host.id = ROOT_ID; host.setAttribute('aria-label', 'EcoMind AI extension analysis'); document.documentElement.appendChild(host)
   shadow = host.attachShadow({ mode: 'open' })
-  const alternative = product.alternativeProductId ? ALTERNATIVE_DATA[product.alternativeProductId] : null
-  const alternativeScore = alternative ? calculateGreenScore(alternative) : null
-  const scoreTone = result.score >= 65 ? '#16734d' : result.score >= 45 ? '#87640f' : '#a24733'
-  const factors = result.breakdown.map((item) => `<article class="factor"><strong>${escapeHtml(item.label)}</strong><b>${item.score === null ? 'Not disclosed' : `${Math.round(item.score)}/100`}</b><p>${escapeHtml(item.detail)}</p><small>${Math.round(item.weight * 100)}% weight</small></article>`).join('')
-  const missing = product.missingFields.length ? product.missingFields.map((field) => `<li>${escapeHtml(field)}: Not disclosed</li>`).join('') : '<li>No major gaps in this demo listing.</li>'
-  const sources = product.sources.map((source) => `<span title="${escapeHtml(source.note ?? '')}">${escapeHtml(source.label)} · ${escapeHtml(source.type.replaceAll('-', ' '))}</span>`).join('')
-  const comparisonMarkup = alternative && alternativeScore ? `<div class="comparison"><h4>Side-by-side evidence</h4><div class="comparison-row"><strong>Product</strong><span>${escapeHtml(product.shortName)}</span><span>${escapeHtml(alternative.shortName)}</span></div><div class="comparison-row"><strong>Green Score</strong><span>${formatScore(result)}/100</span><span>${formatScore(alternativeScore)}/100</span></div><div class="comparison-row"><strong>Materials</strong><span>${escapeHtml(product.materials.map((item) => `${item.percentage}% ${item.material}`).join(', '))}</span><span>${escapeHtml(alternative.materials.map((item) => `${item.percentage}% ${item.material}`).join(', '))}</span></div><div class="comparison-row"><strong>Price</strong><span>£${product.price.toFixed(2)}</span><span>£${alternative.price.toFixed(2)}</span></div><div class="comparison-actions"><button class="view-alt" type="button">View greener product</button><button class="save-alt" type="button">Save lower-impact option</button></div></div>` : ''
-  const altMarkup = alternative && alternativeScore ? `<article class="alternative"><span>LOWER-IMPACT LOCAL MATCH</span><h3>${escapeHtml(alternative.productName)}</h3><p>Here is a lower-impact option at a similar price. Affordability and practical needs still matter.</p><div class="alt-metrics"><strong>£${alternative.price.toFixed(2)}</strong><b>${formatScore(alternativeScore)}/100 ${alternativeScore.grade}</b><span>${escapeHtml(alternative.materials.map((item) => `${item.percentage}% ${item.material}`).join(', '))}</span></div><p class="alt-tradeoff"><strong>Trade-off:</strong> ${escapeHtml(alternative.tradeOff)}</p></article>${comparisonMarkup}` : `<article class="alternative"><span>LOCAL DATASET</span><h3>Best local match</h3><p>No stronger alternative was found. Repairing, reusing or skipping a new purchase can also reduce impact.</p></article>`
-  shadow.innerHTML = `<style>${extensionStyles}.big-score{color:${scoreTone}}.big-score b{background:${scoreTone}}</style>
-    <button class="widget" type="button" aria-label="Open EcoMind analysis. ${result.provisional ? 'Provisional Green Score approximately' : 'Green Score'} ${result.score} out of 100, grade ${result.grade}">${koalaMarkup()}<span class="score"><strong>${formatScore(result)}</strong><small>/100</small><b>${result.grade}</b></span><span class="copy"><strong>${escapeHtml(result.status)}</strong><small>${escapeHtml(product.confidenceLevel)} confidence</small><span class="points"><span data-points>${state.points}</span> demo EcoPoints</span></span><span class="arrow">→</span></button>
-    <div class="layer" role="presentation"><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ecomind-analysis-title"><header class="drawer-header"><div><strong>EcoMind analysis</strong><span class="confidence ${product.confidenceLevel.toLowerCase()}">${escapeHtml(product.confidenceLevel)} confidence</span></div><button class="close" type="button" aria-label="Close EcoMind analysis">×</button></header><div class="drawer-body">
-      <section class="product">${product.imageUrl ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.productName)}">` : ''}<div><span>Visible demo listing</span><h2 id="ecomind-analysis-title">${escapeHtml(product.productName)}</h2><b>£${product.price.toFixed(2)}</b></div></section>
-      <section class="score-hero"><div class="big-score"><strong>${formatScore(result)}</strong><small>/100</small><b>${result.grade}</b></div><div class="score-copy"><span>${escapeHtml(result.status)}</span><h3>${escapeHtml(result.explanation)}</h3><p>${result.range ? `Estimated range ${result.range.min}–${result.range.max}/100; unknown is not treated as zero.` : 'Estimated from available demo product information.'}</p></div></section>
-      <div class="ai-note"><strong>Local interpretation.</strong> EcoMind extracts the visible listing fields. The published deterministic methodology calculates the numeric score.</div>
-      <details class="extraction"><summary>See what AI extracted</summary><blockquote>“${escapeHtml(product.listingText)}”</blockquote><div class="extract-grid"><div><span>Material</span><b>${escapeHtml(product.materials.map((item) => item.material).join(', ') || 'Not disclosed')}</b></div><div><span>Percentage</span><b>${escapeHtml(product.materials.map((item) => `${item.percentage}%`).join(', ') || 'Not disclosed')}</b></div><div><span>Packaging</span><b>${product.packagingType ? escapeHtml(packagingLabels[product.packagingType]) : 'Not disclosed'}</b></div><div><span>Confidence</span><b>${escapeHtml(product.confidenceLevel)}</b></div><div><span>Manufacturing location</span><b>Not disclosed</b></div><div><span>Lifecycle assessment</span><b>Not disclosed</b></div></div><p>Simulated AI-assisted extraction structures only visible fields. It does not invent missing environmental facts.</p></details>
-      <section class="section"><div class="section-title"><h3>Score breakdown</h3><span>Weighted to 100</span></div><div class="breakdown">${factors}</div></section>
-      <section class="section"><div class="section-title"><h3>Evidence and missing data</h3><span>${escapeHtml(product.confidenceLevel)} confidence</span></div><div class="evidence"><div class="used"><h4>Information used</h4><ul><li>${escapeHtml(product.materials.map((item) => `${item.percentage}% ${item.material}`).join(', ') || 'Materials: Not disclosed')}</li><li>${product.estimatedCarbonKg === null ? 'Carbon: Not disclosed' : `Carbon: about ${product.estimatedCarbonKg.toFixed(1)} kg CO2e (${escapeHtml(product.carbonValueType)})`}</li><li>${product.packagingType ? escapeHtml(packagingLabels[product.packagingType]) : 'Packaging: Not disclosed'}</li></ul></div><div class="missing"><h4>Missing information</h4><ul>${missing}</ul>${product.missingFields.length ? '<p class="missing-note">Missing disclosure does not prove poor performance; it lowers confidence.</p>' : ''}</div></div></section>
-      <section class="section"><div class="section-title"><h3>Local data sources</h3><span>No external requests</span></div><div class="sources">${sources}</div></section>
-      <details><summary>How the Green Score is calculated</summary><p><code>Materials × 35% + carbon × 25% + recycled content × 20% + durability and circularity × 10% + packaging × 10%</code><br><br>Confidence stays separate from the score. This prototype is not a certification.</p></details>
-      ${altMarkup}<p class="disclaimer">Scores are estimates, not official certifications. Product listings can be incomplete or incorrect. Product information never leaves this browser.</p>
-    </div><footer class="drawer-footer"><button class="save" type="button">Save item</button><button class="compare" type="button" ${alternative ? '' : 'disabled'}>${alternative ? 'Compare greener alternative' : 'No alternative needed'}</button></footer></aside></div>`
+  const scoreLabel = analysis.score === null ? 'Score withheld' : product.parserUsed === 'threadly' ? String(analysis.score) : `~${analysis.score}`
+  const rangeLabel = analysis.range ? `${analysis.range[0]}–${analysis.range[1]}/100 possible range` : 'Not enough evidence for a range'
+  const missing = product.missingFields.length ? product.missingFields.map((field) => `<li>${escapeHtml(field)}: Not disclosed</li>`).join('') : '<li>No major fields missing.</li>'
+  const debugEnabled = new URLSearchParams(location.search).get('ecomind-debug') === 'true' || state.preferences.diagnosticsEnabled
+  const diagnosticsMarkup = debugEnabled ? `<details class="diagnostics"><summary>Developer diagnostics</summary><pre>${escapeHtml(JSON.stringify({ ...diagnostics, finalConfidence: analysis.confidence, scoringInputs: analysis.factors }, null, 2))}</pre></details>` : ''
+  shadow.innerHTML = `<style>${styles}</style><button class="widget" type="button" aria-label="Open EcoMind analysis. ${escapeHtml(scoreLabel)}, ${escapeHtml(analysis.confidence)} confidence">${koalaMarkup()}<span class="score"><strong>${escapeHtml(scoreLabel)}</strong><small>${analysis.score === null ? '' : '/100'}</small><b>${escapeHtml(analysis.grade ?? '—')}</b></span><span class="copy"><strong>${analysis.score === null ? 'Confirmation needed' : 'Provisional Green Score'}</strong><small>${escapeHtml(analysis.confidence)} confidence · Open analysis</small></span></button><div class="layer" role="presentation"><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ecomind-title"><header class="drawer-header"><div><strong>EcoMind analysis</strong><span>Local · ${escapeHtml(product.retailer)} · ${escapeHtml(product.parserUsed)}</span></div><button class="close" type="button" aria-label="Close EcoMind analysis">×</button></header><div class="drawer-body"><section class="product">${product.imageUrl ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.title ?? 'Product image')}">` : ''}<div><span>${escapeHtml(product.retailer)}</span><h2 id="ecomind-title">${escapeHtml(product.title ?? 'Product information needed')}</h2><b>${escapeHtml(formatMoney(product))}</b></div></section><div class="meta-row"><span>Parser: ${escapeHtml(product.parserUsed)}</span><span>${escapeHtml(product.url)}</span><span>${analysis.factors.filter((item) => item.result.status !== 'unknown').length}/5 factors supported</span></div><section class="score-hero"><div class="big-score"><strong>${escapeHtml(scoreLabel)}</strong><small>${analysis.score === null ? '' : '/100'}</small><b>${escapeHtml(analysis.grade ?? '—')}</b></div><div class="score-copy"><h3>${escapeHtml(analysis.explanation)}</h3><p>${escapeHtml(rangeLabel)}. Missing evidence is unknown, never confirmed zero.</p></div></section><div class="local-note"><strong>Local evidence analysis.</strong> EcoMind structures product information from this active page. The deterministic prototype formula—not AI—calculates the provisional midpoint and range.</div>${extractedMarkup(product)}<section class="section"><h3>Score breakdown</h3><div class="breakdown">${analysis.factors.map(factorMarkup).join('')}</div></section><section class="missing"><h3>Missing information</h3><ul>${missing}</ul><p>Absence of disclosure does not prove poor environmental performance. It lowers confidence and widens the range.</p></section>${manualMarkup(product)}${comparisonMarkup(state, product)}${diagnosticsMarkup}<p class="disclaimer">Provisional scores are estimates, not certifications. Retail pages can be incomplete or change without notice. EcoMind sends no product information to a server.</p></div><footer class="drawer-footer"><button class="save" type="button">Save for comparison</button></footer></aside></div>`
 
-  const layer = shadow.querySelector<HTMLElement>('.layer')!
-  const widget = shadow.querySelector<HTMLButtonElement>('.widget')!
-  const close = shadow.querySelector<HTMLButtonElement>('.close')!
+  const layer = shadow.querySelector<HTMLElement>('.layer')!; const widget = shadow.querySelector<HTMLButtonElement>('.widget')!; const close = shadow.querySelector<HTMLButtonElement>('.close')!
   const openDrawer = () => { layer.classList.add('open'); document.body.inert = true; close.focus() }
   const closeDrawer = () => { layer.classList.remove('open'); document.body.inert = false; widget.focus() }
-  widget.addEventListener('click', openDrawer)
-  close.addEventListener('click', closeDrawer)
-  layer.addEventListener('click', (event) => { if (event.target === layer) closeDrawer() })
+  widget.addEventListener('click', openDrawer); close.addEventListener('click', closeDrawer); layer.addEventListener('click', (event) => { if (event.target === layer) closeDrawer() })
   shadow.addEventListener('keydown', (event) => {
     if (!(event instanceof KeyboardEvent) || !layer.classList.contains('open')) return
-    if (event.key === 'Escape') return closeDrawer()
+    if (event.key === 'Escape') { closeDrawer(); return }
     if (event.key !== 'Tab') return
-    const focusable = [...shadow!.querySelectorAll<HTMLElement>('button:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')]
-    if (!focusable.length) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (event.shiftKey && shadow!.activeElement === first) { event.preventDefault(); last.focus() }
-    else if (!event.shiftKey && shadow!.activeElement === last) { event.preventDefault(); first.focus() }
+    const focusable = [...shadow!.querySelectorAll<HTMLElement>('button:not([disabled]),summary,input:not([disabled]),textarea:not([disabled]),select:not([disabled])')]
+    const first = focusable[0]; const last = focusable.at(-1); if (!first || !last) return
+    if (event.shiftKey && shadow!.activeElement === first) { event.preventDefault(); last.focus() } else if (!event.shiftKey && shadow!.activeElement === last) { event.preventDefault(); first.focus() }
   })
-  shadow.querySelector<HTMLButtonElement>('.save')!.addEventListener('click', () => void saveProduct(product, result))
-  shadow.querySelector<HTMLButtonElement>('.compare')!.addEventListener('click', () => { if (alternative) { shadow?.querySelector('.comparison')?.classList.add('open'); void recordComparison(product, alternative) } })
-  shadow.querySelector<HTMLButtonElement>('.save-alt')?.addEventListener('click', () => { if (alternative && alternativeScore) void saveProduct(alternative, alternativeScore) })
-  shadow.querySelector<HTMLButtonElement>('.view-alt')?.addEventListener('click', () => { if (alternative) { document.dispatchEvent(new CustomEvent('ecomind-view-product', { detail: { productId: alternative.id } })); closeDrawer() } })
+  shadow.querySelector<HTMLButtonElement>('.save')!.addEventListener('click', () => void saveForComparison(product, analysis))
+  shadow.querySelector<HTMLButtonElement>('.compare-previous')?.addEventListener('click', () => void recordRealComparison(product))
+  shadow.querySelector<HTMLButtonElement>('.compare-threadly')?.addEventListener('click', () => void recordThreadlyComparison(product))
+  shadow.querySelector<HTMLButtonElement>('.save-threadly')?.addEventListener('click', () => void saveThreadlyAlternative(product))
+  shadow.querySelector<HTMLFormElement>('#manualForm')!.addEventListener('submit', (event) => void submitManualCorrection(event, product))
+  openDrawer()
 }
 
 function showToast(message: string) {
-  if (!shadow) return
-  shadow.querySelector('.success-note')?.remove()
-  const note = document.createElement('div')
-  note.className = 'success-note'
-  note.setAttribute('role', 'status')
-  note.textContent = message
-  shadow.appendChild(note)
-  window.setTimeout(() => note.remove(), 3200)
+  shadow?.querySelector('.toast')?.remove(); const toast = document.createElement('div'); toast.className = 'toast'; toast.setAttribute('role', 'status'); toast.textContent = message; shadow?.appendChild(toast); setTimeout(() => toast.remove(), 3500)
 }
 
-function wishlistItem(product: AnalysedProduct, result: ScoreResult): ExtensionWishlistItem {
-  return { id: product.id, productName: product.productName, price: product.price, currency: product.currency, score: result.score, grade: result.grade, confidenceLevel: product.confidenceLevel, alternativeAvailable: Boolean(product.alternativeProductId) }
+function wishlistItem(product: ParsedProduct, analysis: DisplayAnalysis): ExtensionWishlistItem {
+  return { id: productKey(product), productName: product.title ?? 'Untitled product', price: product.price, currency: product.currency, score: analysis.score, scoreRange: analysis.range, grade: analysis.grade, confidenceLevel: analysis.confidence, alternativeAvailable: false, retailer: product.retailer, url: product.url, parserUsed: product.parserUsed, materials: product.materials, recycledContentPercentage: product.recycledContentPercentage, packaging: product.packaging }
 }
 
-async function saveProduct(product: AnalysedProduct, result: ScoreResult) {
-  const state = await readExtensionState()
-  const alreadySaved = state.wishlist.some((item) => item.id === product.id)
-  if (!alreadySaved) state.wishlist.push(wishlistItem(product, result))
-  const actionKey = `save-${product.id}`
-  const eligible = result.score >= 65 && !state.completedActions.includes(actionKey)
-  if (eligible) {
-    state.points += 5
-    state.completedActions.push(actionKey)
-    state.activities.unshift({ id: `${actionKey}-${Date.now()}`, title: 'Lower-impact option saved', detail: product.productName, points: 5, date: 'Today' })
-  }
-  await writeExtensionState(state)
-  await broadcastStorage(state)
-  showToast(alreadySaved ? 'Already saved to the extension wishlist.' : eligible ? 'Saved. +5 demo EcoPoints.' : 'Saved locally. No purchase is assumed.')
+async function saveForComparison(product: ParsedProduct, analysis: DisplayAnalysis) {
+  const state = await readExtensionState(); const item = wishlistItem(product, analysis); const index = state.wishlist.findIndex((saved) => saved.id === item.id)
+  if (index >= 0) state.wishlist[index] = item; else state.wishlist.push(item)
+  await writeExtensionState(state); showToast(index >= 0 ? 'Saved comparison record updated.' : 'Extracted fields saved for real-product comparison.')
 }
 
-async function recordComparison(product: AnalysedProduct, alternative: AnalysedProduct) {
-  const state = await readExtensionState()
-  const actionKey = `compare-${product.id}`
-  const eligible = !state.completedActions.includes(actionKey)
-  if (eligible) {
-    state.points += 5
-    state.completedActions.push(actionKey)
-    state.activities.unshift({ id: `${actionKey}-${Date.now()}`, title: 'Greener alternative compared', detail: alternative.productName, points: 5, date: 'Today' })
-  }
-  await writeExtensionState(state)
-  await broadcastStorage(state)
-  showToast(eligible ? 'Comparison opened. +5 demo EcoPoints.' : 'Comparison reward already recorded.')
+async function recordRealComparison(product: ParsedProduct) {
+  const state = await readExtensionState(); const key = `real-compare-${productKey(product)}`
+  if (!state.completedActions.includes(key)) { state.completedActions.push(key); state.points += 5; state.activities.unshift({ id: `${key}-${Date.now()}`, title: 'Real products compared', detail: product.title ?? product.retailer, points: 5, date: 'Today' }); await writeExtensionState(state); showToast('Real-product comparison recorded. +5 demo EcoPoints.') } else showToast('This comparison is already recorded.')
 }
 
-function recordAnalysis(state: ExtensionState, product: AnalysedProduct) {
-  const actionKey = `analysis-${product.id}`
-  if (state.completedActions.includes(actionKey)) return
-  state.completedActions.push(actionKey)
-  state.activities.unshift({ id: `${actionKey}-${Date.now()}`, title: 'Product analysis completed', detail: product.productName, points: 0, date: 'Today' })
+async function recordThreadlyComparison(product: ParsedProduct) {
+  const record = PRODUCT_RECORDS.find((item) => item.id === product.productId)
+  const alternative = PRODUCT_RECORDS.find((item) => item.id === record?.alternativeProductId)
+  if (!record || !alternative) return
+  const state = await readExtensionState(); const key = `compare-${record.id}`
+  if (!state.completedActions.includes(key)) { state.completedActions.push(key); state.points += 5; state.activities.unshift({ id: `${key}-${Date.now()}`, title: 'Greener demo alternative compared', detail: alternative.productName, points: 5, date: 'Today' }); await writeExtensionState(state); showToast('Threadly demo comparison recorded. +5 demo EcoPoints.') } else showToast('This demo comparison is already recorded.')
+}
+
+async function saveThreadlyAlternative(product: ParsedProduct) {
+  const record = PRODUCT_RECORDS.find((item) => item.id === product.productId)
+  const alternative = PRODUCT_RECORDS.find((item) => item.id === record?.alternativeProductId)
+  if (!alternative) return
+  const result = calculateGreenScore(alternative); const state = await readExtensionState(); const id = `Threadly demo:${alternative.id}`; const key = `save-${alternative.id}`
+  const item: ExtensionWishlistItem = { id, productName: alternative.productName, price: alternative.price, currency: alternative.currency, score: result.score, scoreRange: result.range ? [result.range.min, result.range.max] : null, grade: result.grade, confidenceLevel: alternative.confidenceLevel, alternativeAvailable: false, retailer: 'Threadly demo', url: `${location.origin}${location.pathname}#/demo`, parserUsed: 'threadly', materials: alternative.materials.map((material) => ({ name: material.material, percentage: material.percentage, evidence: alternative.listingText })), recycledContentPercentage: alternative.recycledContentPercentage, packaging: alternative.packagingType }
+  const index = state.wishlist.findIndex((saved) => saved.id === id); if (index >= 0) state.wishlist[index] = item; else state.wishlist.push(item)
+  if (!state.completedActions.includes(key)) { state.completedActions.push(key); state.points += 5; state.activities.unshift({ id: `${key}-${Date.now()}`, title: 'Demo alternative saved', detail: alternative.productName, points: 5, date: 'Today' }) }
+  await writeExtensionState(state); showToast(index >= 0 ? 'Saved demo alternative updated.' : 'Demo alternative saved. +5 demo EcoPoints.')
+}
+
+async function submitManualCorrection(event: SubmitEvent, product: ParsedProduct) {
+  event.preventDefault(); const form = event.currentTarget as HTMLFormElement; const data = new FormData(form)
+  const materialText = [String(data.get('materialText') ?? '').trim(), data.get('material') && data.get('materialPercentage') ? `${data.get('materialPercentage')}% ${data.get('material')}` : ''].filter(Boolean).join(', ')
+  const corrections: ManualCorrections = { title: String(data.get('title') ?? '').trim() || null, materialText: materialText || null, recycledContentPercentage: data.get('recycled') ? Number(data.get('recycled')) : null, packaging: String(data.get('packaging') ?? '').trim() || null, markNotDisclosed: [data.get('missingMaterials') ? 'materials' : null, data.get('missingRecycled') ? 'recycledContent' : null, data.get('missingPackaging') ? 'packaging' : null].filter((item): item is 'materials' | 'recycledContent' | 'packaging' => item !== null) }
+  currentProduct = applyManualCorrections(product, corrections); currentAnalysis = displayAnalysis(currentProduct)
+  const state = await readExtensionState(); if (data.get('remember')) { state.manualCorrections[productKey(product)] = corrections; await writeExtensionState(state) }
+  renderExtension(currentProduct, currentAnalysis, state, currentDiagnostics ?? parseProductPage(document, location.href).diagnostics); showToast('Manual evidence applied and labelled “Provided by user”.')
+  notifyPopup(currentAnalysis.canScore ? (currentAnalysis.confidence === 'Low' ? 'low-confidence' : 'missing-data') : currentProduct.isClothing ? 'missing-data' : 'unsupported-category', 'Manual evidence applied locally. Open EcoMind to review the revised result.')
+}
+
+function recordAnalysis(state: ExtensionState, product: ParsedProduct) {
+  const key = `analysis-${productKey(product)}`; if (state.completedActions.includes(key)) return
+  state.completedActions.push(key); state.activities.unshift({ id: `${key}-${Date.now()}`, title: 'Product analysis completed', detail: `${product.retailer}: ${product.title ?? 'manual entry'}`, points: 0, date: 'Today' })
+}
+
+function installVariationWatch(product: ParsedProduct) {
+  variationObserver?.disconnect(); initialSignature = currentPageSignature()
+  const targets = [document.querySelector('#productTitle'), document.querySelector('input#ASIN'), document.querySelector('#variation_color_name'), document.querySelector('#variation_size_name'), document.querySelector('main h1')].filter((item): item is Element => Boolean(item))
+  if (!targets.length || product.parserUsed === 'threadly') return
+  const check = () => { if (currentPageSignature() !== initialSignature && analysisState !== 'product-changed') { notifyPopup('product-changed', 'The product title, identifier or selected variation changed. Re-analyse this product.'); shadow?.querySelector('.widget .copy strong')?.replaceChildren('Product changed · re-analyse') } }
+  variationObserver = new MutationObserver(check); targets.forEach((target) => variationObserver!.observe(target, { attributes: true, childList: true, subtree: true, characterData: true })); window.addEventListener('popstate', check, { once: true })
 }
 
 async function runAnalysis() {
   try {
-    notifyPopup('analysing', 'Reading the visible demo product information locally.')
-    await new Promise((resolve) => window.setTimeout(resolve, 650))
-    currentProduct = extractProductFromPage()
-    if (!currentProduct) {
-      notifyPopup('unsupported', 'This page is not an EcoMind demo product page.')
-      return
-    }
-    currentResult = calculateGreenScore(currentProduct)
-    const state = await readExtensionState()
-    recordAnalysis(state, currentProduct)
-    await writeExtensionState(state)
-    renderExtension(currentProduct, currentResult, state)
-    await broadcastStorage(state)
-    const nextState: AnalysisState = currentProduct.confidenceLevel === 'Low' ? 'low-confidence' : currentResult.provisional ? 'missing-data' : 'success'
-    const detail = nextState === 'low-confidence' ? 'Analysis complete with low confidence and visible data gaps.' : nextState === 'missing-data' ? 'Analysis complete, but important product fields are not disclosed.' : 'Analysis complete. Click the injected koala for details.'
-    notifyPopup(nextState, detail)
-  } catch (error) {
-    notifyPopup('error', error instanceof Error ? error.message : 'Local product analysis failed.')
-  }
+    notifyPopup('analysing', 'Reading product evidence from this active page locally.')
+    const parsed = parseProductPage(document, location.href); currentProduct = parsed.product; currentDiagnostics = parsed.diagnostics
+    const state = await readExtensionState(); const savedCorrections = state.manualCorrections[productKey(currentProduct)]; if (savedCorrections) currentProduct = applyManualCorrections(currentProduct, savedCorrections)
+    currentAnalysis = displayAnalysis(currentProduct); recordAnalysis(state, currentProduct); await writeExtensionState(state); renderExtension(currentProduct, currentAnalysis, state, currentDiagnostics); installVariationWatch(currentProduct)
+    if (!currentProduct.isProduct) notifyPopup('unsupported', 'EcoMind could not confirm a product page. Open the koala to enter product information manually.')
+    else if (!currentProduct.isClothing) notifyPopup('unsupported-category', 'Product detected, but EcoMind currently scores clothing and textile products. Manual evidence is available.')
+    else if (!currentAnalysis.canScore) notifyPopup('missing-data', 'Product detected, but material composition is not disclosed. Manual confirmation is available.')
+    else if (currentAnalysis.confidence === 'Low') notifyPopup('low-confidence', `${currentProduct.retailer} product analysed with low confidence. Review missing evidence or add a correction.`)
+    else if (currentAnalysis.factors.some((item) => item.result.status === 'unknown')) notifyPopup('missing-data', `${currentProduct.retailer} product analysed provisionally. Missing factors remain unknown.`)
+    else notifyPopup('success', `${currentProduct.retailer} clothing product analysed locally. Open the koala for evidence.`)
+  } catch (error) { notifyPopup('error', `${error instanceof Error ? error.message : 'Local parser failed.'} Try again or use manual entry.`) }
 }
 
 chrome.runtime.onMessage.addListener((message: StatusMessage, _sender, sendResponse) => {
-  if (message.type === 'ECOMIND_GET_STATUS') {
-    sendResponse({ type: 'ECOMIND_STATUS_UPDATE', state: analysisState, detail: analysisDetail } satisfies StatusMessage)
-  }
-  if (message.type === 'ECOMIND_STATUS_UPDATE' && message.detail === 'open-widget') {
-    shadow?.querySelector<HTMLElement>('.layer')?.classList.add('open')
-    document.body.inert = true
-    shadow?.querySelector<HTMLButtonElement>('.close')?.focus()
-    sendResponse({ type: 'ECOMIND_STATUS_UPDATE', state: analysisState, detail: analysisDetail } satisfies StatusMessage)
-  }
-  if (message.type === 'ECOMIND_STATUS_UPDATE' && message.detail === 'rerun-analysis') {
-    void runAnalysis()
-    sendResponse({ type: 'ECOMIND_STATUS_UPDATE', state: 'analysing', detail: 'Analysis restarted locally.' } satisfies StatusMessage)
-  }
+  if (message.type === 'ECOMIND_GET_STATUS') sendResponse({ type: 'ECOMIND_STATUS_UPDATE', state: analysisState, detail: analysisDetail } satisfies StatusMessage)
+  if (message.type === 'ECOMIND_STATUS_UPDATE' && message.detail === 'open-widget') { shadow?.querySelector<HTMLElement>('.layer')?.classList.add('open'); document.body.inert = true; shadow?.querySelector<HTMLButtonElement>('.close')?.focus() }
+  if (message.type === 'ECOMIND_STATUS_UPDATE' && message.detail === 'rerun-analysis') { variationObserver?.disconnect(); void runAnalysis(); sendResponse({ type: 'ECOMIND_STATUS_UPDATE', state: 'analysing', detail: 'Analysis restarted from the current DOM.' } satisfies StatusMessage) }
 })
-
-chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes[STORAGE_KEY]?.newValue) void broadcastStorage(changes[STORAGE_KEY].newValue as ExtensionState)
-})
-
+chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes[STORAGE_KEY]?.newValue) shadow?.querySelector('.widget .copy small')?.setAttribute('data-storage-updated', 'true') })
 const extensionWindow = window as Window & { __ECOMIND_CONTENT_LOADED__?: boolean }
-if (!extensionWindow.__ECOMIND_CONTENT_LOADED__) {
-  extensionWindow.__ECOMIND_CONTENT_LOADED__ = true
-  void runAnalysis()
-}
+if (!extensionWindow.__ECOMIND_CONTENT_LOADED__) { extensionWindow.__ECOMIND_CONTENT_LOADED__ = true; void runAnalysis() }

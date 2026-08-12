@@ -4,7 +4,9 @@
 
 - The hackathon MVP focuses on T-shirts displayed in a generic online store.
 - Currency is GBP for the demo.
-- The Manifest V3 extension analyses only the active EcoMind demo product page after explicit activation.
+- The Manifest V3 extension analyses only the active page after explicit activation and does not maintain persistent access to retail sites.
+- Amazon, H&M, Nike and Shopify adapters are best-effort heuristics, not official retailer integrations.
+- Generic Schema.org/Open Graph support depends on the quality of metadata published by each store.
 - The first analysis should work without an account.
 - A local demo profile is enough to show gated saving and EcoPoints behaviour.
 - EcoPoints thresholds are 0-14 for Starter Koala, 15-39 for Eco Explorer and 40 or more for Climate Champion.
@@ -13,7 +15,7 @@
 
 ## Data assumptions
 
-- All three products are fictional.
+- Threadly's three products are fictional; real-page results use only evidence exposed by the active retailer page or explicitly user-provided corrections.
 - Prices, material shares, product descriptions, ratings, reviews and footprint values are demo data.
 - Carbon values are product-level estimates for demonstration only.
 - Material impact factors are prototype assumptions, not peer-reviewed lifecycle factors.
@@ -31,6 +33,9 @@
 - Incomplete records show an approximation mark and a score range spanning the minimum and maximum contribution of unknown factors.
 - Score thresholds and letter grades need comprehension and behaviour-change testing.
 - Labour ethics is excluded from the environmental score and shown separately.
+- Real-page material factors are EcoMind prototype ranges, not retailer claims or lifecycle factors.
+- Real-page carbon and durability remain unknown without supporting evidence; material type alone is not used to invent an exact footprint.
+- A real-product score is withheld when clothing/textile relevance or material evidence is insufficient.
 
 ## AI limitations
 
@@ -52,7 +57,9 @@
 - Local storage is convenient but is not a secure account system.
 - The demo profile does not authenticate a real person.
 - The web prototype does not request browser-extension permissions.
-- The installable extension uses temporary `activeTab` access and supports only the included EcoMind demo product pages.
+- The installable extension uses temporary `activeTab` access. It has no persistent host permissions and therefore cannot inspect a page before the user's activation click.
+- Manual corrections are stored only for the product when the user selects the remember option and are labelled user-provided.
+- Cross-retailer comparison stores a limited extracted record, not webpage HTML.
 - The optional dashboard bridge works while the injected content script is active in the same demo tab. Chrome extension storage is not directly readable by ordinary web pages.
 - A production extension needs minimum permissions, retention controls, deletion controls, security review and a clear privacy notice.
 - The repository contains no secrets or personal user data.

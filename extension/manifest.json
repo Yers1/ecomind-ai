@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "EcoMind AI Demo",
-  "version": "1.0.0",
-  "description": "Locally analyses EcoMind demo clothing pages with a transparent Green Score.",
+  "name": "EcoMind AI",
+  "version": "1.1.0",
+  "description": "Locally analyses clothing product evidence across supported and structured-data retail pages.",
   "permissions": ["activeTab", "scripting", "storage"],
   "background": {
     "service_worker": "background.js"

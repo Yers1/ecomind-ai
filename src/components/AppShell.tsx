@@ -40,7 +40,7 @@ export function AppShell({ page, navigate, children }: { page: Page; navigate: (
       <main id="main-content">{children}</main>
       <footer className="site-footer">
         <Brand compact />
-        <p>Team 17, Teens in AI AI4Good Incubator 2026. Hackathon prototype using sample data.</p>
+        <p>Team 17, Teens in AI AI4Good Incubator 2026. Local evidence prototype with a clearly labelled sample demo.</p>
         <div>
           <button onClick={() => go('methodology')}>Methodology</button>
           <button onClick={() => go('privacy')}>Privacy and ethics</button>

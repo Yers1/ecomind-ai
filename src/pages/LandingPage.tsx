@@ -70,7 +70,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <article className="how-card how-card--wide">
             <div className="how-card__icon"><Eye size={25} /></div>
             <h3>Activate on a product</h3>
-            <p>No account is needed for the first analysis. The prototype only uses local sample listings.</p>
+            <p>No account is needed. The extension analyses only the active page after you click it, using local retailer adapters and structured-data fallbacks.</p>
             <div className="mini-store-row">
               <img src={getProduct('polyester-everyday-tee').image} alt="Charcoal performance T-shirt sample" />
               <div><span>Performance Tee</span><b>Check its impact</b></div>
@@ -80,12 +80,12 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <article className="how-card how-card--tinted">
             <div className="how-card__icon"><Brain size={25} /></div>
             <h3>Understand the evidence</h3>
-            <p>Simulated AI structures the listing. The published formula calculates the numeric score.</p>
+            <p>Local rules structure the listing and cite the evidence. The published deterministic formula calculates the provisional score.</p>
           </article>
           <article className="how-card how-card--mint">
             <div className="how-card__icon"><Recycle size={25} /></div>
             <h3>Compare without pressure</h3>
-            <p>See a lower-impact option, including its price and trade-off, before deciding.</p>
+            <p>Save two clothing products from different retailers to compare their disclosed evidence, price and uncertainty.</p>
           </article>
         </div>
       </section>
@@ -140,7 +140,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <Brand />
           <h2>See the full shopping journey.</h2>
           <button className="button button--primary" onClick={() => navigate('demo')}>Launch product demo <ArrowRight size={18} /></button>
-          <p>Hackathon prototype. Scores and rewards use sample data and are not certifications.</p>
+          <p>Hackathon prototype. Real-page results are provisional estimates; Threadly remains the clearly labelled sample demo. Neither is a certification.</p>
         </div>
       </section>
     </div>
