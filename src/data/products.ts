@@ -1,12 +1,14 @@
 import type { Product } from '../types'
 
+const asset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
+
 export const products: Product[] = [
   {
     id: 'polyester-everyday-tee',
     productName: 'Northline Everyday Performance Tee',
     shortName: 'Performance Tee',
     category: 'Clothing',
-    image: '/products/polyester-tee.png',
+    image: asset('/products/polyester-tee.png'),
     price: 14.99,
     currency: 'GBP',
     rating: 4.4,
@@ -35,7 +37,7 @@ export const products: Product[] = [
     productName: 'Willow & Thread Classic Cotton Tee',
     shortName: 'Cotton Tee',
     category: 'Clothing',
-    image: '/products/cotton-tee.png',
+    image: asset('/products/cotton-tee.png'),
     price: 18.5,
     currency: 'GBP',
     rating: 4.6,
@@ -64,7 +66,7 @@ export const products: Product[] = [
     productName: 'Mosswell Renew Loop Tee',
     shortName: 'Renew Loop Tee',
     category: 'Clothing',
-    image: '/products/recycled-tee.png',
+    image: asset('/products/recycled-tee.png'),
     price: 21.0,
     currency: 'GBP',
     rating: 4.7,
