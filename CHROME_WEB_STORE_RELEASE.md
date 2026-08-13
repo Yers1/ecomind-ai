@@ -25,13 +25,13 @@ Load `dist-extension` through `chrome://extensions` and run the Threadly, suppor
 
 ## 2. Create the upload ZIP
 
-The ZIP must contain `manifest.json` at its root, not inside another directory:
+The release command creates a ZIP with `manifest.json` at its root:
 
 ```powershell
-Compress-Archive -Path .\dist-extension\* -DestinationPath .\ecomind-ai-extension-1.1.0.zip -Force
+npm run package:extension
 ```
 
-Open the ZIP and confirm that `manifest.json`, `background.js`, `content.js`, `popup.html`, `popup.css`, `popup.js` and `icons` are directly inside it.
+Upload `release\ecomind-ai-chrome-extension.zip`. Open it first and confirm that `manifest.json`, `background.js`, `content.js`, `popup.html`, `popup.css`, `popup.js` and `icons` are directly inside it.
 
 ## 3. Register the owner account
 
@@ -43,7 +43,7 @@ Open the ZIP and confirm that `manifest.json`, `background.js`, `content.js`, `p
 ## 4. Upload the package
 
 1. Select **Add new item**.
-2. Upload `ecomind-ai-extension-1.1.0.zip`.
+2. Upload `release\ecomind-ai-chrome-extension.zip`.
 3. Confirm that the dashboard accepts Manifest V3 version `1.1.1`.
 4. If the manifest needs a correction, edit `extension/manifest.json`, increase the version, rebuild and create a new ZIP. Manifest metadata cannot be edited inside the dashboard.
 
