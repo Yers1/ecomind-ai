@@ -62,10 +62,10 @@ The web app deliberately does not fetch another marketplace across origins. Scre
 Configure the team’s official survey link in `.env.local`:
 
 ```text
-VITE_FEEDBACK_SURVEY_URL=https://your-survey.example/form
+VITE_FEEDBACK_SURVEY_URL=https://docs.google.com/forms/d/e/1FAIpQLSegFqFkHh43sP1_trfG0hS-H9tKXRFoWPVND5pOAVMt6rlDxA/viewform
 ```
 
-Without that variable, the final button opens a clearly labelled local-only fallback form that saves a draft locally and copies it for manual submission. No survey URL was present in the project, so one is not invented.
+Production is connected to the team’s published Google Form. Without that variable, the final button opens a clearly labelled local-only fallback form that saves a draft locally and copies it for manual submission.
 
 ## Build, install and test the Chrome extension
 
@@ -154,6 +154,6 @@ Open `/#/insights` or select **Retailer Insights Demo** in the footer. This is a
 - The app does not provide barcode scanning because clothing barcodes rarely contain enough sustainability evidence.
 - No live retailer, lifecycle or certification-provider API is connected.
 - Chrome’s protected `chrome://extensions` installation screen remains a user-controlled final check.
-- The official feedback survey URL must be supplied by the team through `VITE_FEEDBACK_SURVEY_URL`.
+- Password recovery and confirmed-email delivery require a custom SMTP provider before a larger public launch.
 
 For release copy and Chrome Web Store steps, see [CHROME_WEB_STORE_RELEASE.md](CHROME_WEB_STORE_RELEASE.md). For the exact live evidence record, see [REAL_RETAILER_TESTING.md](REAL_RETAILER_TESTING.md). MIT licensed.

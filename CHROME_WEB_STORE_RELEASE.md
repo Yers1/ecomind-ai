@@ -77,7 +77,7 @@ Key features:
 - optional user-labelled corrections stored only on the device;
 - saved extracted fields for comparison across products and retailers;
 - accessible traffic-light explanations whose thresholds are shared with the web app;
-- optional Supabase email-OTP sign-in, backend leaderboard profile and weekly EcoPoints summary;
+- optional Supabase email/password sign-in, backend leaderboard profile and weekly EcoPoints summary;
 - no external product-analysis server, advertisements or payment-data access.
 
 Scores are educational prototype estimates, not certifications or lifecycle assessments. Retailer compatibility is best-effort and no retailer partnership is claimed.
@@ -129,7 +129,7 @@ Permission justifications:
 - `scripting`: inject the parser and koala only after that action;
 - `storage`: keep preferences, corrections, wishlist fields and demo EcoPoints on the device.
 
-A backend-configured build also contains one exact host permission for `https://YOUR_PROJECT_REF.supabase.co/*`. This is used only for email OTP, private event synchronisation and the opted-in public leaderboard. Replace the placeholder through build environment variables; do not add an all-sites host permission.
+A backend-configured build contains one exact host permission for `https://wmyqcmcaaslbowdvoqqy.supabase.co/*`. This is used only for private account sign-in, approved event synchronisation and the opted-in public leaderboard. Passwords are sent directly to Supabase Auth over HTTPS and are never stored by EcoMind. Do not add an all-sites host permission.
 
 Do not say that no website content is accessed—the extension necessarily reads the selected product page. The accurate distinction is that access is user-activated, local and not transmitted.
 
