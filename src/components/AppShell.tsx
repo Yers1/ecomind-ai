@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Brand } from './Brand'
 import { useEcoMind } from '../state/EcoMindContext'
 
-export type Page = 'home' | 'analyse' | 'demo' | 'dashboard' | 'leaderboard' | 'wishlist' | 'methodology' | 'privacy' | 'feedback'
+export type Page = 'home' | 'install' | 'analyse' | 'demo' | 'dashboard' | 'leaderboard' | 'wishlist' | 'methodology' | 'privacy' | 'feedback'
 
 export function AppShell({ page, navigate, children }: { page: Page; navigate: (page: Page) => void; children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -20,6 +20,7 @@ export function AppShell({ page, navigate, children }: { page: Page; navigate: (
           <Brand compact />
         </button>
         <nav className={`site-nav ${mobileOpen ? 'site-nav--open' : ''}`} aria-label="Primary navigation">
+          <button className={page === 'install' ? 'is-active' : ''} onClick={() => go('install')}>Install extension</button>
           <button className={page === 'analyse' ? 'is-active' : ''} onClick={() => go('analyse')}>Analyse a product</button>
           <button onClick={() => go('demo')}>Demo Mode</button>
           <button className={page === 'dashboard' ? 'is-active' : ''} onClick={() => go('dashboard')}>Dashboard</button>

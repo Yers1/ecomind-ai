@@ -44,7 +44,7 @@ Open the ZIP and confirm that `manifest.json`, `background.js`, `content.js`, `p
 
 1. Select **Add new item**.
 2. Upload `ecomind-ai-extension-1.1.0.zip`.
-3. Confirm that the dashboard accepts Manifest V3 version `1.1.0`.
+3. Confirm that the dashboard accepts Manifest V3 version `1.1.1`.
 4. If the manifest needs a correction, edit `extension/manifest.json`, increase the version, rebuild and create a new ZIP. Manifest metadata cannot be edited inside the dashboard.
 
 ## 5. Suggested store listing
@@ -70,9 +70,10 @@ After you select “Analyse this product”, EcoMind reads the active page local
 Key features:
 
 - user-activated local analysis of the current product page;
-- best-effort retailer adapters plus Schema.org Product, Open Graph and itemprop fallbacks;
+- best-effort live support for Amazon US/UK clothing pages, with unsupported pages identified honestly;
 - visible evidence sources, missing fields and confidence;
 - provisional score or score-withheld result when evidence is insufficient;
+- separate seller-provided, user-provided and independently verified certification states, including careful OEKO-TEX handling;
 - optional user-labelled corrections stored only on the device;
 - saved extracted fields for comparison across products and retailers;
 - accessible traffic-light explanations whose thresholds are shared with the web app;

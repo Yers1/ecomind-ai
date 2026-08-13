@@ -9,8 +9,9 @@ import { StoreDemoPage } from './pages/StoreDemoPage'
 import { WishlistPage } from './pages/WishlistPage'
 import { AnalyseProductPage } from './pages/AnalyseProductPage'
 import { FeedbackPage } from './pages/FeedbackPage'
+import { InstallExtensionPage } from './pages/InstallExtensionPage'
 
-const validPages: Page[] = ['home', 'analyse', 'demo', 'dashboard', 'leaderboard', 'wishlist', 'methodology', 'privacy', 'feedback']
+const validPages: Page[] = ['home', 'install', 'analyse', 'demo', 'dashboard', 'leaderboard', 'wishlist', 'methodology', 'privacy', 'feedback']
 
 function pageFromHash(): Page {
   const hash = window.location.hash.replace('#/', '') as Page
@@ -34,6 +35,7 @@ export default function App() {
   return (
     <AppShell page={page} navigate={navigate}>
       {page === 'home' && <LandingPage navigate={navigate} />}
+      {page === 'install' && <InstallExtensionPage />}
       {page === 'analyse' && <AnalyseProductPage navigate={navigate} />}
       {page === 'demo' && <StoreDemoPage navigate={navigate} />}
       {page === 'dashboard' && <DashboardPage navigate={navigate} />}

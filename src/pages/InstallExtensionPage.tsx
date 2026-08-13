@@ -1,0 +1,13 @@
+import { ArrowRight, CheckCircle, DownloadSimple, GoogleChromeLogo, LockKey, WarningCircle } from '@phosphor-icons/react'
+
+const DOWNLOAD_URL = '/downloads/ecomind-ai-chrome-extension.zip'
+
+export function InstallExtensionPage() {
+  return <div className="install-page page-surface">
+    <header className="page-hero container install-hero"><div><p className="kicker">Chrome extension · tester release 1.1.1</p><h1>Install EcoMind in a few minutes.</h1><p>No GitHub knowledge is required. The public Chrome Web Store listing is being prepared; testers can use the signed-off unpacked build today.</p><a className="button button--primary" href={DOWNLOAD_URL} download><DownloadSimple size={19} /> Download EcoMind for Chrome</a></div><div className="install-status"><WarningCircle size={22} /><div><strong>Tester installation</strong><span>Chrome Web Store review pending</span></div></div></header>
+    <main className="container install-content">
+      <section className="install-card"><div className="install-card__title"><GoogleChromeLogo size={27} /><div><span>Windows · Chrome</span><h2>Load the extension</h2></div></div><ol className="install-steps"><li><i>1</i><div><strong>Download and extract the ZIP</strong><p>Open Downloads, right-click the ZIP and select Extract All.</p></div></li><li><i>2</i><div><strong>Open Chrome extensions</strong><p>Enter <code>chrome://extensions</code> in the address bar.</p></div></li><li><i>3</i><div><strong>Enable Developer mode</strong><p>Use the switch in the top-right corner.</p></div></li><li><i>4</i><div><strong>Select Load unpacked</strong><p>Choose the extracted folder that directly contains <code>manifest.json</code>.</p></div></li><li><i>5</i><div><strong>Pin and test EcoMind</strong><p>Open an Amazon US/UK clothing page, select EcoMind and choose Analyse this product.</p></div></li></ol><a className="button button--secondary" href="https://www.amazon.com/Amazon-Essentials-Classic-Fit-Short-Sleeve-Multipacks/dp/B0D8TGLHMB" target="_blank" rel="noreferrer">Open a tested Amazon page <ArrowRight size={18} /></a></section>
+      <aside className="install-notes"><div><CheckCircle size={20} /><span><strong>What is supported</strong>Amazon US/UK clothing pages are the current best-effort live pilot. Threadly is Demo Mode.</span></div><div><LockKey size={20} /><span><strong>Minimal permissions</strong>Active tab, on-demand script injection and local storage. No browsing history or payment access.</span></div><div><WarningCircle size={20} /><span><strong>Scores are estimates</strong>Green Scores are provisional educational results, not certifications.</span></div></aside>
+    </main>
+  </div>
+}

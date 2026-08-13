@@ -15,6 +15,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <h1>Make greener choices while you shop.</h1>
           <p className="hero__sub">A clear Green Score, honest data gaps and lower-impact options at a similar price.</p>
           <div className="hero__actions">
+            <button className="button button--primary" onClick={() => navigate('install')}>Install extension <ArrowRight size={18} /></button>
             <button className="button button--primary" onClick={() => navigate('analyse')}>Analyse a product <ArrowRight size={18} /></button>
             <button className="button button--secondary" onClick={() => navigate('demo')}>Open Demo Mode</button>
             <button className="button button--secondary" onClick={() => navigate('methodology')}>How the score works</button>

@@ -163,6 +163,20 @@ assert.equal(parsers.certificationAdjustment([{ ...environmentalCertification, s
 assert.equal(parsers.certificationAdjustment([environmentalCertification]), 2)
 assert.equal(parsers.certificationAdjustment([environmentalCertification, { ...environmentalCertification, displayedName: 'Alias' }]), 2, 'Aliases of one certification must be deduplicated.')
 assert.equal(parsers.certificationAdjustment([environmentalCertification, { ...environmentalCertification, certificationId: 'test-environmental-2' }, { ...environmentalCertification, certificationId: 'test-environmental-3' }]), 3)
+const standard100 = parsers.detectCertificationEvidence('This product is OEKO-TEX STANDARD 100 certified SH020 129287.', 'Amazon product details', 'product-details').certifications[0]
+assert.equal(standard100.certificationId, 'oeko-tex-standard-100')
+assert.equal(standard100.status, 'seller-claim')
+assert.equal(standard100.certificationIdValue, 'SH020 129287')
+assert.equal(standard100.affectsEnvironmentalScore, false)
+assert.equal(parsers.certificationAdjustment([standard100]), 0)
+const madeInGreenSellerClaim = parsers.detectCertificationEvidence('This product carries OEKO-TEX MADE IN GREEN label XX.XXX.XXXX.', 'Amazon product details', 'product-details').certifications[0]
+assert.equal(madeInGreenSellerClaim.certificationId, 'oeko-tex-made-in-green')
+assert.equal(madeInGreenSellerClaim.status, 'seller-claim')
+assert.equal(parsers.certificationAdjustment([madeInGreenSellerClaim]), 0)
+const madeInGreenVerified = parsers.detectCertificationEvidence('This product carries OEKO-TEX MADE IN GREEN label XX.XXX.XXXX.', 'Official OEKO-TEX Label Check', 'manufacturer-link', 'https://www.oeko-tex.com/en/label-check').certifications[0]
+assert.equal(madeInGreenVerified.status, 'verified')
+assert.equal(madeInGreenVerified.affectsEnvironmentalScore, true)
+assert.equal(parsers.certificationAdjustment([madeInGreenVerified]), 2)
 const capped = parsers.scoreRealProduct({ ...full.parsed.product, certifications: [environmentalCertification, { ...environmentalCertification, certificationId: 'test-environmental-2' }], materials: [{ name: 'Lyocell', percentage: 100, evidence: '100% lyocell' }], recycledContentPercentage: 100 })
 assert.ok(capped.score <= 100)
 

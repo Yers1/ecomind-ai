@@ -7,6 +7,8 @@ EcoMind AI is a testable cross-device sustainability-evidence prototype for clot
 
 **Live web prototype:** [https://ecomind-ai-two.vercel.app](https://ecomind-ai-two.vercel.app)
 
+**No-GitHub tester installation page:** [https://ecomind-ai-two.vercel.app/#/install](https://ecomind-ai-two.vercel.app/#/install)
+
 **Demo Mode:** the fictional Threadly products are sanitised fixtures. They demonstrate complete UI states; they are not proof of retailer compatibility.
 
 > Every score is a provisional educational estimate, not a certification or lifecycle assessment. Missing evidence remains unknown. No retailer partnership is claimed.
@@ -32,6 +34,8 @@ Material impact × 35%
 ```
 
 Visible retailer text is seller-provided page evidence, not independent verification. User corrections and screenshot OCR are labelled user-provided. EcoMind estimates are labelled as estimates. Unavailable fields say `Not disclosed`; they are never converted to confirmed zeroes. Variation-dependent wording such as `Solids / Heathers / Colours` blocks scoring until the selected composition is confirmed.
+
+OEKO-TEX® STANDARD 100 is recognised as chemical-safety evidence and adds no environmental points. OEKO-TEX® MADE IN GREEN is recognised as multi-criteria evidence, but its small prototype adjustment is available only after a product-specific ID is confirmed through the official OEKO-TEX Label Check. A seller claim alone adds zero.
 
 Traffic-light thresholds are 70–100 Green/lower impact, 40–69 Amber/mixed impact, 0–39 Red/higher impact, and Grey/not enough information. Colour is always accompanied by an icon, label, score or range, grade where applicable, confidence and accessible text.
 
@@ -95,6 +99,8 @@ npm run package:extension
 ```
 
 Output: [`release/ecomind-ai-chrome-extension.zip`](release/ecomind-ai-chrome-extension.zip). Unzip it first, then load the extracted directory through **Load unpacked**. Chrome cannot load the ZIP directly.
+
+The same generated file is copied to `public/downloads/` and deployed at `https://ecomind-ai-two.vercel.app/downloads/ecomind-ai-chrome-extension.zip`, so testers do not need GitHub.
 
 ## Guided prototype test
 

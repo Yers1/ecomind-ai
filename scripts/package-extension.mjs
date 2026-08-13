@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import archiver from 'archiver'
 
@@ -18,4 +18,8 @@ await new Promise((resolvePromise, reject) => {
   void archive.finalize()
 })
 
-console.log(`Packaged installable extension at ${zipPath}`)
+const publicDownloadDirectory = resolve('public', 'downloads')
+await mkdir(publicDownloadDirectory, { recursive: true })
+await copyFile(zipPath, resolve(publicDownloadDirectory, 'ecomind-ai-chrome-extension.zip'))
+
+console.log(`Packaged installable extension at ${zipPath} and public/downloads/ecomind-ai-chrome-extension.zip`)

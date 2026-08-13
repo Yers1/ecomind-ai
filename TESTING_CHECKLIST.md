@@ -141,6 +141,8 @@
 - [ ] The sanitised prAna fixture extracts 100% Regenerative Organic Cotton without treating that phrase as a certification.
 - [ ] Fair Trade Certified appears as People information and adds zero environmental points.
 - [ ] Verified environmental evidence adds +2 or at most +3; aliases, seller claims and missing certification add zero.
+- [ ] OEKO-TEX STANDARD 100 is shown as chemical-safety evidence and adds zero environmental points.
+- [ ] OEKO-TEX MADE IN GREEN seller wording adds zero; only an official Label Check with a product-specific ID can produce verified environmental evidence.
 - [ ] Amber uses `#F59E0B` with icon and text in web and extension results.
 - [ ] Amazon US/UK selector fallbacks extract title, price, image, ASIN, features and labelled detail rows.
 - [ ] H&M, Nike and Shopify adapters remain clearly labelled fixture/regression coverage and are not claimed as live support.
