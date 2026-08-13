@@ -1,7 +1,7 @@
 import { ArrowRight, Leaf, WarningCircle } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import type { Product } from '../types'
-import { getProduct } from '../data/products'
+import { getRecommendedProduct } from '../data/products'
 import { calculateGreenScore } from '../lib/scoring'
 import { KoalaMascot } from './KoalaMascot'
 import { ScoreDrawer } from './ScoreDrawer'
@@ -30,7 +30,7 @@ export function EcoWidget({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
   const result = calculateGreenScore(product)
-  const alternative = product.alternativeProductId ? getProduct(product.alternativeProductId) : null
+  const alternative = getRecommendedProduct(product) ?? null
   const trafficStatus = getTrafficLightStatus(result.score, result.knownWeight >= .35)
 
   useEffect(() => {

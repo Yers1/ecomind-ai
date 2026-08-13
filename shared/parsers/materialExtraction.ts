@@ -1,6 +1,7 @@
 import type { ParsedMaterial } from './parserTypes'
 
 const MATERIAL_ALIASES: Array<{ pattern: string; normalised: string }> = [
+  { pattern: 'regenerative\\s+organic\\s+cotton', normalised: 'Regenerative Organic Cotton' },
   { pattern: 'repreve(?:®)?(?:\\s+recycled)?\\s+polyester', normalised: 'Recycled polyester' },
   { pattern: 'recycled\\s+polyester|rpet', normalised: 'Recycled polyester' },
   { pattern: 'recycled\\s+cotton', normalised: 'Recycled cotton' },

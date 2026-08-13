@@ -27,6 +27,8 @@
 ## Scoring limitations
 
 - The score is not a lifecycle assessment, environmental product declaration or certification.
+- The verified environmental certification adjustment is capped at +3 and is a prototype assumption requiring expert review. Social/labour certifications remain separate.
+- Fulfilment packaging and manufacturer packaging are independent 5% factors. Retailer identity alone never supplies packaging evidence.
 - Material factors do not account for geography, energy mix, dyeing, finishing, transport, care or end-of-life outcomes.
 - The carbon formula is intentionally simple and needs expert validation.
 - Missing factors remain `null`, reduce confidence and are excluded from the provisional midpoint calculation rather than being treated as confirmed zero.

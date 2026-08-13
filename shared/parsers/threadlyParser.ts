@@ -1,4 +1,4 @@
-import { PRODUCT_RECORDS, calculateConfidence, packagingLabels, type DataSource, type ProductRecord } from '../ecomind'
+import { PRODUCT_RECORDS, calculateConfidence, type DataSource, type ProductRecord } from '../ecomind'
 import { applyTextEvidence, cleanText, emptyProduct, makeEvidence, parsePriceText, result } from './parserUtils'
 import type { ProductPageParser } from './parserTypes'
 
@@ -27,7 +27,7 @@ export const threadlyParser: ProductPageParser = {
     product.featureText = listingText ? [listingText] : []
     const rejected = applyTextEvidence(product, listingText, 'visible-page', 'Threadly sample product listing', '.store-details')
     product.recycledContentPercentage = container.dataset.recycledContent && container.dataset.recycledContent !== 'null' ? Number(container.dataset.recycledContent) : null
-    product.packaging = local?.packagingType ? packagingLabels[local.packagingType] : null
+    product.packaging = local?.packaging ?? { fulfilment: null, manufacturer: null }
     product.certifications = local?.certifications ?? []
     product.category = local?.category ?? 'Clothing'
     product.brand = product.title?.split(' ')[0] ?? null

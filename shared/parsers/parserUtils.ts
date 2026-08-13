@@ -1,4 +1,6 @@
 import { extractMaterials, extractRecycledPercentage } from './materialExtraction'
+import type { PackagingEvidence } from '../ecomind'
+import { detectCertificationEvidence, deduplicateCertificationEvidence } from '../certifications/certificationRegistry'
 import type { EvidenceSource, ParsedProduct, ParserDiagnostics, ParserId, ParserResult } from './parserTypes'
 
 export const CLOTHING_TERMS = /\b(t-?shirt|shirt|tee|top|dress|skirt|trouser|pants|jeans|jacket|coat|hoodie|sweater|jumper|cardigan|shorts|sock|underwear|bra|apparel|clothing|fashion|garment|shoe|sneaker|trainer|scarf|hat|cap|glove|flannel|overshirt)\b/i
@@ -50,7 +52,7 @@ export function makeEvidence(field: string, value: string | number | null, sourc
 }
 
 export function emptyProduct(url: string, retailer: string, parserUsed: ParserId): ParsedProduct {
-  return { url, retailer, productId: null, title: null, brand: null, category: null, price: null, currency: null, imageUrl: null, description: null, featureText: [], materials: [], materialCompositionUncertain: false, recycledContentPercentage: null, certifications: [], weightGrams: null, packaging: null, countryOfOrigin: null, careInstructions: null, evidence: [], missingFields: [], parserUsed, isProduct: false, isClothing: false }
+  return { url, retailer, productId: null, title: null, brand: null, category: null, price: null, currency: null, imageUrl: null, description: null, featureText: [], materials: [], materialCompositionUncertain: false, recycledContentPercentage: null, certifications: [], sustainabilityClaims: [], weightGrams: null, packaging: { fulfilment: null, manufacturer: null }, countryOfOrigin: null, careInstructions: null, shipperSeller: null, evidence: [], missingFields: [], parserUsed, isProduct: false, isClothing: false }
 }
 
 export function evidenceText(product: ParsedProduct) {
@@ -61,13 +63,32 @@ export function finaliseProduct(product: ParsedProduct) {
   const text = evidenceText(product)
   product.isProduct = Boolean(product.title && (product.price !== null || product.productId || product.imageUrl || product.description))
   product.isClothing = product.materials.length > 0 || (CLOTHING_TERMS.test(text) && !UNSUPPORTED_TERMS.test(text))
-  const required: Array<[string, unknown]> = [['Product title', product.title], ['Price', product.price], ['Material composition', product.materials.length ? product.materials : null], ['Recycled content', product.recycledContentPercentage], ['Packaging', product.packaging], ['Country of origin', product.countryOfOrigin], ['Care instructions', product.careInstructions], ['Product weight', product.weightGrams]]
+  const required: Array<[string, unknown]> = [['Product title', product.title], ['Price', product.price], ['Material composition', product.materials.length ? product.materials : null], ['Recycled content', product.recycledContentPercentage], ['Fulfilment packaging', product.packaging.fulfilment], ['Manufacturer packaging', product.packaging.manufacturer], ['Country of origin', product.countryOfOrigin], ['Care instructions', product.careInstructions], ['Product weight', product.weightGrams]]
   product.missingFields = required.filter(([, value]) => value === null || value === undefined).map(([label]) => label)
   return product
 }
 
 export function buildDiagnostics(product: ParsedProduct, matchedSelectors: string[], jsonLdProductFound: boolean, rawFields: Record<string, unknown>, rejectedFields: string[] = []): ParserDiagnostics {
-  return { url: product.url, parserSelected: product.parserUsed, matchedSelectors: [...new Set(matchedSelectors)], jsonLdProductFound, rawFields, normalisedFields: { title: product.title, brand: product.brand, category: product.category, price: product.price, currency: product.currency, materials: product.materials, recycledContentPercentage: product.recycledContentPercentage, weightGrams: product.weightGrams, packaging: product.packaging, countryOfOrigin: product.countryOfOrigin, careInstructions: product.careInstructions }, rejectedFields, missingFields: product.missingFields }
+  return { url: product.url, parserSelected: product.parserUsed, matchedSelectors: [...new Set(matchedSelectors)], jsonLdProductFound, rawFields, normalisedFields: { title: product.title, brand: product.brand, category: product.category, price: product.price, currency: product.currency, materials: product.materials, recycledContentPercentage: product.recycledContentPercentage, certifications: product.certifications, sustainabilityClaims: product.sustainabilityClaims, weightGrams: product.weightGrams, packaging: product.packaging, countryOfOrigin: product.countryOfOrigin, careInstructions: product.careInstructions, shipperSeller: product.shipperSeller }, rejectedFields, missingFields: product.missingFields }
+}
+
+function packagingEvidence(description: string, sourceLabel: string, confidence: PackagingEvidence['confidence']): PackagingEvidence {
+  const material = description.match(/recycled[- ]?(?:cardboard|card|paper)|cardboard|paper|plastic/i)?.[0] ?? null
+  const recycled = description.match(/(\d{1,3})%\s+recycled/i)?.[1]
+  return { description, material, recycledContentPercentage: recycled ? Math.min(100, Number(recycled)) : null, reducedPackagingOption: /reduced packaging|ships? in product packaging|plastic[- ]free|minimal packaging/i.test(description) ? true : null, sourceType: 'product-page', sourceLabel, confidence }
+}
+
+export function applyPackagingEvidence(product: ParsedProduct, text: string, sourceLabel: string, selector?: string) {
+  const fulfilment = text.match(/(?:delivery|shipping|fulfilment|fulfillment)[^.!?\n]{0,90}(?:box|mailer|bag|packaging|filling|tape)|(?:ships? in product packaging|ships? plastic[- ]free|reduced packaging|recyclable delivery packaging)[^.!?\n]{0,90}/i)?.[0]?.trim()
+  const manufacturer = text.match(/(?:individual (?:protective )?polybag|manufacturer(?:'s)? packaging|original packaging|branded (?:product )?box|plastic wrapping|product sleeve|protective product packaging)[^.!?\n]{0,90}/i)?.[0]?.trim()
+  if (fulfilment) {
+    product.packaging.fulfilment = packagingEvidence(fulfilment, sourceLabel, 'high')
+    product.evidence.push(makeEvidence('fulfilmentPackaging', fulfilment, 'visible-page', sourceLabel, 'high', selector))
+  }
+  if (manufacturer) {
+    product.packaging.manufacturer = packagingEvidence(manufacturer, sourceLabel, 'high')
+    product.evidence.push(makeEvidence('manufacturerPackaging', manufacturer, 'visible-page', sourceLabel, 'high', selector))
+  }
 }
 
 export function applyTextEvidence(product: ParsedProduct, text: string, sourceType: EvidenceSource['sourceType'], sourceLabel: string, selector?: string) {
@@ -79,6 +100,10 @@ export function applyTextEvidence(product: ParsedProduct, text: string, sourceTy
   }
   product.recycledContentPercentage = extractRecycledPercentage(text, product.materials)
   if (product.recycledContentPercentage !== null) product.evidence.push(makeEvidence('recycledContentPercentage', product.recycledContentPercentage, sourceType, sourceLabel, 'high', selector))
+  applyPackagingEvidence(product, text, sourceLabel, selector)
+  const certificationEvidence = detectCertificationEvidence(text, sourceLabel, sourceType === 'json-ld' ? 'structured-data' : /sustainab/i.test(sourceLabel) ? 'sustainability-section' : 'product-details')
+  product.certifications = deduplicateCertificationEvidence([...product.certifications, ...certificationEvidence.certifications])
+  product.sustainabilityClaims = [...new Set([...product.sustainabilityClaims, ...certificationEvidence.sustainabilityClaims])]
   return extraction.rejected
 }
 

@@ -84,7 +84,8 @@ export function StoreDemoPage({ navigate }: { navigate: (page: Page) => void }) 
         data-recycled-content={product.recycledContentPercentage === null ? 'null' : String(product.recycledContentPercentage)}
         data-carbon-kg={product.estimatedCarbonKg === null ? 'null' : String(product.estimatedCarbonKg)}
         data-carbon-value-type={product.carbonValueType}
-        data-packaging={product.packagingType ?? ''}
+        data-fulfilment-packaging={product.packaging.fulfilment?.description ?? ''}
+        data-manufacturer-packaging={product.packaging.manufacturer?.description ?? ''}
         data-durability={String(product.durabilityRating)}
         data-circularity={String(product.circularityRating)}
         data-sources={JSON.stringify(product.sources)}

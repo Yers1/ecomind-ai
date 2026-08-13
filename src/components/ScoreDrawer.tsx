@@ -7,6 +7,7 @@ import { ScoreBadge } from './ScoreBadge'
 import { ScoreBreakdown } from './ScoreBreakdown'
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog'
 import { TrafficLightLegend } from './TrafficLight'
+import { packagingEvidenceLabel } from '../../shared/ecomind'
 
 export function ScoreDrawer({
   product,
@@ -49,13 +50,14 @@ export function ScoreDrawer({
             <p><strong>Simulated AI analysis</strong> AI helps interpret product information. The score is calculated using the published EcoMind methodology.</p>
           </div>
           <details className="ai-extraction">
-            <summary><span><Brain size={19} /> See what AI extracted</span><Info size={18} /></summary>
+            <summary><span><Brain size={19} /> See what EcoMind extracted</span><Info size={18} /></summary>
             <div className="ai-extraction__body">
               <div><span>Product listing text</span><blockquote>“{product.listingText}”</blockquote></div>
               <dl>
                 <div><dt>Material</dt><dd>{product.materials.map((item) => item.material).join(', ') || 'Not disclosed'}</dd></div>
                 <div><dt>Material percentage</dt><dd>{product.materials.map((item) => `${item.percentage}%`).join(', ') || 'Not disclosed'}</dd></div>
-                <div><dt>Packaging</dt><dd>{product.packagingType ? product.packagingType.replaceAll('-', ' ') : 'Not disclosed'}</dd></div>
+                <div><dt>Fulfilment packaging · 5%</dt><dd>{packagingEvidenceLabel(product.packaging.fulfilment)}</dd></div>
+                <div><dt>Manufacturer packaging · 5%</dt><dd>{packagingEvidenceLabel(product.packaging.manufacturer)}</dd></div>
                 <div><dt>Manufacturing location</dt><dd>Not disclosed</dd></div>
                 <div><dt>Supplier lifecycle assessment</dt><dd>Not disclosed</dd></div>
                 <div><dt>Confidence</dt><dd>{product.confidenceLevel}</dd></div>
@@ -68,6 +70,15 @@ export function ScoreDrawer({
             <ScoreBreakdown result={result} />
           </section>
           <section className="drawer-section evidence-section">
+            <div className="drawer-section__heading"><h3>Materials and certifications</h3></div>
+            <div className="certification-summary">
+              <p><strong>Base environmental score:</strong> {result.baseScore}/100</p>
+              <p><strong>Verified environmental certification adjustment:</strong> +{result.certificationAdjustment}</p>
+              <p><strong>Final Green Score:</strong> {result.score}/100</p>
+              {product.certifications.length ? product.certifications.map((item) => <div key={`${item.certificationId}-${item.rawClaim}`}><strong>{item.affectsPeopleInformation ? 'People certification' : item.affectsEnvironmentalScore ? 'Environmental certification' : 'Certification candidate'}: {item.displayedName}</strong><span>{item.status} · {item.rawClaim}</span><small>{item.affectsEnvironmentalScore ? 'Supports environmental evidence when verified' : 'Not included in the environmental Green Score'}</small></div>) : <p>No verified certification found. No points added or removed.</p>}
+              {product.sustainabilityClaims.map((claim) => <div key={claim}><strong>Unverified sustainability claim</strong><span>{claim}</span><small>0 certification points</small></div>)}
+            </div>
+            <details className="certification-why"><summary>Why this certification affected the result</summary><p>Only verified, relevant environmental certifications can add up to 3 prototype points. Aliases are deduplicated. People certifications and marketing claims remain visible but add no environmental points.</p></details>
             <div className="drawer-section__heading"><h3>Information behind this score</h3></div>
             <div className="evidence-grid">
               <div className="evidence-box evidence-box--used">
@@ -75,7 +86,8 @@ export function ScoreDrawer({
                 <ul>
                   <li>{product.materials.map((item) => `${item.percentage}% ${item.material}`).join(', ')}</li>
                   <li>{product.estimatedCarbonKg === null ? 'Carbon: Not disclosed' : `Carbon: about ${product.estimatedCarbonKg.toFixed(1)} kg CO2e (${product.carbonValueType})`}</li>
-                  <li>{product.packagingType ? 'Packaging details available' : 'Packaging: Not disclosed'}</li>
+                  <li>{product.packaging.fulfilment ? `Fulfilment packaging: ${packagingEvidenceLabel(product.packaging.fulfilment)}` : 'Fulfilment packaging: Not disclosed'}</li>
+                  <li>{product.packaging.manufacturer ? `Manufacturer packaging: ${packagingEvidenceLabel(product.packaging.manufacturer)}` : 'Manufacturer packaging: Not disclosed'}</li>
                   <li>Demo durability and circularity ratings</li>
                 </ul>
               </div>
@@ -95,7 +107,9 @@ export function ScoreDrawer({
           </section>
           <details className="method-details">
             <summary><span><Question size={19} /> How we calculate the score</span><Info size={18} /></summary>
-            <p><code>Score = materials × 35% + carbon × 25% + recycled content × 20% + durability and circularity × 10% + packaging × 10%</code></p>
+            <p><code>Score = materials × 35% + carbon × 25% + recycled content × 20% + durability and circularity × 10% + fulfilment packaging × 5% + manufacturer packaging × 5%</code></p>
+            <p>Then a verified environmental certification may add up to 3 prototype points. Products without certifications are not penalised.</p>
+            <p>Packaging has two stages. Manufacturer packaging protects the individual product; fulfilment packaging is added by the retailer or delivery partner. Missing evidence remains unknown and can widen the provisional range.</p>
             <p>The demo uses fixed material factors and a simple carbon scale. It is not a lifecycle assessment or certification.</p>
           </details>
           <section className="drawer-section people-section">

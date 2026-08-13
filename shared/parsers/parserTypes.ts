@@ -1,3 +1,6 @@
+import type { ProductPackaging } from '../ecomind'
+import type { CertificationEvidence } from '../certifications/certificationRegistry'
+
 export type EvidenceSourceType =
   | 'json-ld'
   | 'meta'
@@ -48,11 +51,13 @@ export type ParsedProduct = {
   materials: ParsedMaterial[]
   materialCompositionUncertain: boolean
   recycledContentPercentage: number | null
-  certifications: string[]
+  certifications: CertificationEvidence[]
+  sustainabilityClaims: string[]
   weightGrams: number | null
-  packaging: string | null
+  packaging: ProductPackaging
   countryOfOrigin: string | null
   careInstructions: string | null
+  shipperSeller: string | null
   evidence: EvidenceSource[]
   missingFields: string[]
   parserUsed: ParserId
@@ -86,6 +91,16 @@ export type ManualCorrections = {
   title?: string | null
   materialText?: string | null
   recycledContentPercentage?: number | null
-  packaging?: string | null
-  markNotDisclosed?: Array<'materials' | 'recycledContent' | 'packaging'>
+  fulfilmentPackaging?: string | null
+  manufacturerPackaging?: string | null
+  fulfilmentPackagingSource?: string | null
+  manufacturerPackagingSource?: string | null
+  fulfilmentPackagingUncertain?: boolean
+  manufacturerPackagingUncertain?: boolean
+  certificationClaim?: string | null
+  certificationSourceUrl?: string | null
+  certificationAsSellerClaim?: boolean
+  certificationNotDisclosed?: boolean
+  legacyPackagingReview?: string | null
+  markNotDisclosed?: Array<'materials' | 'recycledContent' | 'fulfilmentPackaging' | 'manufacturerPackaging'>
 }

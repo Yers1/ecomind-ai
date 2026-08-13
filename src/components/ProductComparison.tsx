@@ -1,7 +1,7 @@
 import { BookmarkSimple, CheckCircle, Eye, X } from '@phosphor-icons/react'
 import { createPortal } from 'react-dom'
 import type { Product } from '../types'
-import { packagingLabels } from '../data/products'
+import { packagingEvidenceLabel } from '../../shared/ecomind'
 import { calculateGreenScore } from '../lib/scoring'
 import { ConfidenceBadge } from './ConfidenceBadge'
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog'
@@ -19,7 +19,10 @@ export function ProductComparison({ current, alternative, open, onClose, onSave,
     ['Materials', formatMaterials(current), formatMaterials(alternative)],
     ['Recycled content', current.recycledContentPercentage === null ? 'Not disclosed' : `${current.recycledContentPercentage}%`, alternative.recycledContentPercentage === null ? 'Not disclosed' : `${alternative.recycledContentPercentage}%`],
     ['Estimated carbon', formatCarbon(current), formatCarbon(alternative)],
-    ['Packaging', current.packagingType ? packagingLabels[current.packagingType] : 'Not disclosed', alternative.packagingType ? packagingLabels[alternative.packagingType] : 'Not disclosed'],
+    ['Fulfilment packaging · 5%', packagingEvidenceLabel(current.packaging.fulfilment), packagingEvidenceLabel(alternative.packaging.fulfilment)],
+    ['Manufacturer packaging · 5%', packagingEvidenceLabel(current.packaging.manufacturer), packagingEvidenceLabel(alternative.packaging.manufacturer)],
+    ['Environmental certification', current.certifications.find((item) => item.affectsEnvironmentalScore)?.displayedName ?? 'No verified certification found', alternative.certifications.find((item) => item.affectsEnvironmentalScore)?.displayedName ?? 'No verified certification found'],
+    ['People certification', current.certifications.find((item) => item.affectsPeopleInformation)?.displayedName ?? 'Not disclosed', alternative.certifications.find((item) => item.affectsPeopleInformation)?.displayedName ?? 'Not disclosed'],
     ['Price', `£${current.price.toFixed(2)}`, `£${alternative.price.toFixed(2)}`],
     ['Main advantage', current.mainAdvantage, alternative.mainAdvantage],
     ['Trade-off', current.tradeOff, alternative.tradeOff],

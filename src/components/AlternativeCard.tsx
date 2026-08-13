@@ -27,6 +27,7 @@ export function AlternativeCard({ product }: { product: Product }) {
         </div>
         <TrafficLightResult score={result.score} hasSufficientEvidence={result.knownWeight >= .35} provisional={result.provisional} confidence={product.confidenceLevel} grade={result.grade} compact />
       </div>
+      <div className="recommendation-reasons"><strong>Why EcoMind recommends this product</strong><ul><li>{product.materials.map((item) => `${item.percentage}% ${item.material.toLowerCase()} disclosed`).join(', ')}</li><li>{product.certifications.some((item) => item.status === 'verified' && item.affectsEnvironmentalScore) ? 'Relevant verified environmental certification evidence available' : 'No verified environmental certification used'}</li><li>{product.confidenceLevel} data confidence</li><li>Similar price to the current demo product</li></ul></div>
     </article>
   )
 }

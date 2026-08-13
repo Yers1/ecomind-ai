@@ -4,10 +4,11 @@ import type { Page } from '../components/AppShell'
 import { ConfidenceBadge } from '../components/ConfidenceBadge'
 import { ProductComparison } from '../components/ProductComparison'
 import { ScoreBadge } from '../components/ScoreBadge'
-import { getProduct, products } from '../data/products'
+import { getProduct, getRecommendedProduct } from '../data/products'
 import { calculateGreenScore } from '../lib/scoring'
 import { useEcoMind } from '../state/EcoMindContext'
 import type { Product } from '../types'
+import { packagingEvidenceLabel } from '../../shared/ecomind'
 
 export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
   const { wishlist, removeProduct, authenticated, recordComparison, saveProduct } = useEcoMind()
@@ -15,7 +16,7 @@ export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
   const [comparison, setComparison] = useState<{ current: Product; alternative: Product } | null>(null)
 
   const compareFor = (product: Product) => {
-    const alternative = product.alternativeProductId ? getProduct(product.alternativeProductId) : products.find((item) => item.id !== product.id)
+    const alternative = getRecommendedProduct(product)
     if (alternative) {
       recordComparison(product.id, alternative.productName)
       setComparison({ current: product, alternative })
@@ -46,6 +47,7 @@ export function WishlistPage({ navigate }: { navigate: (page: Page) => void }) {
                     <h2>{product.productName}</h2>
                     <ConfidenceBadge level={product.confidenceLevel} />
                     <p>{score.explanation}</p>
+                    <div className="wishlist-evidence"><span><b>Fulfilment · 5%</b>{packagingEvidenceLabel(product.packaging.fulfilment)}</span><span><b>Manufacturer · 5%</b>{packagingEvidenceLabel(product.packaging.manufacturer)}</span><span><b>Certification</b>{product.certifications.find((item) => item.status === 'verified')?.displayedName ?? 'No verified certification found'}</span></div>
                     {product.alternativeProductId ? <span className="alternative-available"><Leaf size={16} weight="fill" /> Greener alternative available</span> : <span className="best-match"><Leaf size={16} /> Best local match</span>}
                     <div className="wishlist-card__actions"><button className="button button--secondary" onClick={() => compareFor(product)}><GitDiff size={17} /> Compare</button><button className="icon-button icon-button--danger" onClick={() => removeProduct(product.id)} aria-label={`Remove ${product.productName} from wishlist`}><Trash size={19} /></button></div>
                   </div>

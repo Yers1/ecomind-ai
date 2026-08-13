@@ -1,5 +1,6 @@
 import { SCORE_WEIGHTS, type ConfidenceLevel, type ScoreFactorKey } from './ecomind'
 import type { EvidenceSource, ParsedProduct } from './parsers/parserTypes'
+import { certificationAdjustment } from './certifications/certificationRegistry'
 
 export type FactorResult =
   | { status: 'known'; score: number; evidence: EvidenceSource[] }
@@ -16,9 +17,12 @@ export type RealProductScore = {
   provisional: true
   canScore: boolean
   explanation: string
+  baseScore: number | null
+  certificationAdjustment: number
 }
 
 const MATERIAL_SCORES: Record<string, [number, number]> = {
+  'Regenerative Organic Cotton': [55, 72],
   Cotton: [38, 58],
   'Organic cotton': [55, 72],
   'Recycled cotton': [72, 88],
@@ -58,11 +62,15 @@ function recycledFactor(product: ParsedProduct): FactorResult {
   return { status: 'known', score: Math.round(product.recycledContentPercentage), evidence: factorEvidence(product, 'recycledContentPercentage') }
 }
 
-function packagingFactor(product: ParsedProduct): FactorResult {
-  if (!product.packaging) return { status: 'unknown', score: null, evidence: [] }
-  const lower = product.packaging.toLowerCase()
-  const score = /plastic[- ]free|minimal|recycled card|recycled paper/.test(lower) ? 82 : /paper|card/.test(lower) ? 65 : /plastic|polybag|mailer/.test(lower) ? 25 : 50
-  return { status: 'estimated', score, range: [Math.max(0, score - 10), Math.min(100, score + 10)], evidence: [...factorEvidence(product, 'packaging'), { field: 'packaging-factor', value: score, sourceType: 'ecomind-estimate', sourceLabel: 'EcoMind prototype packaging factors', confidence: 'low' }] }
+function packagingFactor(product: ParsedProduct, stage: 'fulfilment' | 'manufacturer'): FactorResult {
+  const packaging = product.packaging[stage]
+  const field = stage === 'fulfilment' ? 'fulfilmentPackaging' : 'manufacturerPackaging'
+  if (!packaging) return { status: 'unknown', score: null, evidence: [] }
+  const lower = `${packaging.description ?? ''} ${packaging.material ?? ''}`.toLowerCase()
+  const score = /plastic[- ]free|minimal|recycled card|recycled paper/.test(lower) || packaging.reducedPackagingOption === true ? 82 : /paper|card/.test(lower) ? 65 : /plastic|polybag/.test(lower) ? 25 : 50
+  const evidence = [...factorEvidence(product, field), { field: `${field}-factor`, value: score, sourceType: 'ecomind-estimate' as const, sourceLabel: 'EcoMind prototype packaging factors', confidence: 'low' as const }]
+  const estimated = packaging.sourceType === 'retailer-policy' || packaging.sourceType === 'ecomind-estimate' || packaging.confidence === 'low'
+  return estimated ? { status: 'estimated', score, range: [Math.max(0, score - 15), Math.min(100, score + 15)], evidence } : { status: 'known', score, evidence }
 }
 
 export function scoreRealProduct(product: ParsedProduct): RealProductScore {
@@ -71,22 +79,27 @@ export function scoreRealProduct(product: ParsedProduct): RealProductScore {
     carbon: { status: 'unknown', score: null, evidence: [] },
     recycled: recycledFactor(product),
     durability: { status: 'unknown', score: null, evidence: [] },
-    packaging: packagingFactor(product),
+    fulfilmentPackaging: packagingFactor(product, 'fulfilment'),
+    manufacturerPackaging: packagingFactor(product, 'manufacturer'),
   }
   const known = (Object.keys(factors) as ScoreFactorKey[]).filter((key) => factors[key].status !== 'unknown')
   const knownWeight = known.reduce((sum, key) => sum + SCORE_WEIGHTS[key], 0)
   const weightedMid = known.reduce((sum, key) => sum + (factors[key].score ?? 0) * SCORE_WEIGHTS[key], 0)
-  const score = knownWeight > 0 ? Math.round(weightedMid / knownWeight) : null
+  const baseScore = knownWeight > 0 ? Math.round(weightedMid / knownWeight) : null
+  const adjustment = certificationAdjustment(product.certifications)
+  const score = baseScore === null ? null : Math.min(100, baseScore + adjustment)
   const lowerKnown = known.reduce((sum, key) => { const factor = factors[key]; const value = factor.status === 'estimated' ? factor.range[0] : factor.score ?? 0; return sum + value * SCORE_WEIGHTS[key] }, 0)
   const upperKnown = known.reduce((sum, key) => { const factor = factors[key]; const value = factor.status === 'estimated' ? factor.range[1] : factor.score ?? 0; return sum + value * SCORE_WEIGHTS[key] }, 0)
   const unknownWeight = 1 - knownWeight
-  const range: [number, number] | null = score === null ? null : [Math.floor(lowerKnown), Math.ceil(upperKnown + unknownWeight * 100)]
+  const range: [number, number] | null = score === null ? null : [Math.min(100, Math.floor(lowerKnown) + adjustment), Math.min(100, Math.ceil(upperKnown + unknownWeight * 100) + adjustment)]
   const hasCompleteComposition = product.materials.length > 0
     && product.materials.every((material) => material.percentage !== null)
     && !product.materialCompositionUncertain
   const canScore = product.isClothing && hasCompleteComposition
   const grade = !canScore || score === null ? null : score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 45 ? 'C' : score >= 25 ? 'D' : 'E'
-  const confidence: ConfidenceLevel = known.length >= 4 && !product.materialCompositionUncertain ? 'High' : known.length >= 2 && !product.materialCompositionUncertain ? 'Medium' : 'Low'
-  const explanation = !product.isProduct ? 'EcoMind could not confirm that this is a product page.' : !product.isClothing ? 'Product detected, but EcoMind currently scores clothing and textile products.' : !canScore ? 'A complete, internally consistent percentage composition is needed before EcoMind can calculate a provisional score.' : `${known.length} of 5 factors contain sufficient evidence. Unknown factors remain outside the midpoint and widen the range.`
-  return { score: canScore ? score : null, range: canScore ? range : null, grade, confidence, factors, knownFactorCount: known.length, provisional: true, canScore, explanation }
+  const packagingMissing = !product.packaging.fulfilment || !product.packaging.manufacturer
+  const hasEstimatedPackaging = [product.packaging.fulfilment, product.packaging.manufacturer].some((item) => item?.sourceType === 'retailer-policy' || item?.confidence === 'low')
+  const confidence: ConfidenceLevel = known.length >= 5 && !packagingMissing && !hasEstimatedPackaging && !product.materialCompositionUncertain ? 'High' : known.length >= 2 && !product.materialCompositionUncertain ? 'Medium' : 'Low'
+  const explanation = !product.isProduct ? 'EcoMind could not confirm that this is a product page.' : !product.isClothing ? 'Product detected, but EcoMind currently scores clothing and textile products.' : !canScore ? 'A complete, internally consistent percentage composition is needed before EcoMind can calculate a provisional score.' : `${known.length} of 6 factors contain sufficient evidence. Missing fulfilment or manufacturer packaging stays unknown and can change the score.`
+  return { score: canScore ? score : null, range: canScore ? range : null, grade, confidence, factors, knownFactorCount: known.length, provisional: true, canScore, explanation, baseScore: canScore ? baseScore : null, certificationAdjustment: adjustment }
 }

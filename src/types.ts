@@ -1,10 +1,13 @@
 import type { ProductRecord } from '../shared/ecomind'
+export type { CertificationCategory, CertificationDefinition, CertificationEvidence } from '../shared/certifications/certificationRegistry'
 
 export type {
   ConfidenceLevel,
   DataSource,
   MaterialShare,
-  PackagingType,
+  PackagingEvidence,
+  PackagingSourceType,
+  ProductPackaging,
   ProductRecord,
   ScoreBreakdownItem,
   ScoreFactorKey,

@@ -22,10 +22,6 @@ export const shopifyParser: ProductPageParser = {
     const rejected = applyTextEvidence(product, detailText, 'visible-page', `${product.retailer} visible product details`)
     product.careInstructions = detailText.match(/\b(Machine wash[^.·\n]*)/i)?.[1]?.trim() ?? null
     product.countryOfOrigin = detailText.match(/\bMade (?:responsibly |with love )?in\s+([A-Za-z ]+)/i)?.[1]?.trim() ?? null
-    product.packaging = detailText.match(/\b(ships?\s+plastic[- ]free|plastic[- ]free packaging|recycled packaging)\b/i)?.[1]?.trim() ?? null
-    const certificationMatches = detailText.match(/\b(GOTS|OEKO[- ]?TEX|REPREVE(?:®)?|GRS|OCS(?:[- ]certified)?)\b/gi) ?? []
-    product.certifications = [...new Set(certificationMatches)]
-    if (product.packaging) product.evidence.push(makeEvidence('packaging', product.packaging, 'visible-page', `${product.retailer} visible product details`, 'high'))
     if (product.countryOfOrigin) product.evidence.push(makeEvidence('countryOfOrigin', product.countryOfOrigin, 'visible-page', `${product.retailer} visible product details`, 'high'))
     return result(product, matched, true, { ...(base?.diagnostics.rawFields ?? {}), detailText: detailText.slice(0, 2500) }, [...(base?.diagnostics.rejectedFields ?? []), ...rejected])
   },

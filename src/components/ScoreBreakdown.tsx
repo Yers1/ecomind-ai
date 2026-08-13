@@ -6,7 +6,8 @@ const icons = {
   carbon: Wind,
   recycled: Recycle,
   durability: ShieldCheck,
-  packaging: Package,
+  fulfilmentPackaging: Package,
+  manufacturerPackaging: Package,
 }
 
 export function ScoreBreakdown({ result }: { result: ScoreResult }) {

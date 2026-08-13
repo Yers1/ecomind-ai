@@ -21,7 +21,7 @@
 - [ ] Source labels are visible.
 - [ ] The alternative card uses supportive, non-judgemental language.
 - [ ] Compare opens a side-by-side product comparison.
-- [ ] Price, materials, recycled content, carbon, packaging, confidence, advantage and trade-off are included.
+- [ ] Price, materials, recycled content, carbon, fulfilment packaging, manufacturer packaging, certification evidence, confidence, advantage and trade-off are included.
 - [ ] Saving prompts for a profile only after the first analysis.
 - [ ] Continuing as the demo user completes the pending action.
 - [ ] Comparing the alternative awards 5 demo EcoPoints once.
@@ -138,6 +138,10 @@
 ## Real product parsers
 
 - [ ] `npm run test:parsers` passes every sanitized fixture.
+- [ ] The sanitised prAna fixture extracts 100% Regenerative Organic Cotton without treating that phrase as a certification.
+- [ ] Fair Trade Certified appears as People information and adds zero environmental points.
+- [ ] Verified environmental evidence adds +2 or at most +3; aliases, seller claims and missing certification add zero.
+- [ ] Amber uses `#F59E0B` with icon and text in web and extension results.
 - [ ] Amazon US/UK selector fallbacks extract title, price, image, ASIN, features and labelled detail rows.
 - [ ] H&M, Nike and Shopify adapters enrich structured data without duplicating generic parsing.
 - [ ] Generic JSON-LD handles Product, ProductGroup and nested `@graph` records.

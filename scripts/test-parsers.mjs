@@ -6,7 +6,7 @@ import { build } from 'esbuild'
 import { Window } from 'happy-dom'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const bundle = await build({ stdin: { contents: "export * from './shared/parsers/parserRegistry.ts'; export * from './shared/parsers/materialExtraction.ts'; export * from './shared/realProductScoring.ts'", resolveDir: root, sourcefile: 'parser-test-entry.ts', loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', target: 'node20', write: false })
+const bundle = await build({ stdin: { contents: "export * from './shared/parsers/parserRegistry.ts'; export * from './shared/parsers/materialExtraction.ts'; export * from './shared/realProductScoring.ts'; export * from './shared/certifications/certificationRegistry.ts'", resolveDir: root, sourcefile: 'parser-test-entry.ts', loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', target: 'node20', write: false })
 const parsers = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`)
 
 async function fixture(name, url) {
@@ -26,6 +26,8 @@ assert.deepEqual(full.parsed.product.materials.map((item) => [item.name, item.pe
 assert.equal(full.parsed.product.recycledContentPercentage, 95)
 assert.match(full.parsed.product.countryOfOrigin, /Portugal/)
 assert.ok(full.parsed.product.evidence.some((item) => item.sourceType === 'amazon-selector'))
+assert.match(full.parsed.product.packaging.fulfilment.description, /delivery packaging|mailer/i)
+assert.match(full.parsed.product.packaging.manufacturer.description, /manufacturer packaging|polybag/i)
 const fullScore = parsers.scoreRealProduct(full.parsed.product)
 assert.equal(fullScore.canScore, true)
 assert.equal(fullScore.provisional, true)
@@ -34,7 +36,25 @@ assert.ok(fullScore.range[0] < fullScore.range[1])
 const partial = await fixture('amazon-partial.html', 'https://www.amazon.com/example/dp/B000FIX002')
 assert.equal(partial.parsed.product.materials[0].name, 'Cotton')
 assert.equal(partial.parsed.product.recycledContentPercentage, null)
-assert.ok(partial.parsed.product.missingFields.includes('Packaging'))
+assert.ok(partial.parsed.product.missingFields.includes('Fulfilment packaging'))
+assert.ok(partial.parsed.product.missingFields.includes('Manufacturer packaging'))
+
+const prana = await fixture('amazon-prana-certified.html', 'https://www.amazon.co.uk/example/dp/B0PRANAFIX')
+assert.equal(prana.parsed.product.title, "prAna Women's Everyday Tank")
+assert.equal(prana.parsed.product.price, 22.32)
+assert.equal(prana.parsed.product.currency, 'GBP')
+assert.deepEqual(prana.parsed.product.materials.map((item) => [item.name, item.percentage]), [['Regenerative Organic Cotton', 100]])
+assert.match(prana.parsed.product.careInstructions, /Machine Wash/i)
+assert.match(prana.parsed.product.countryOfOrigin, /Imported/i)
+assert.match(prana.parsed.product.shipperSeller, /Amazon\.com/i)
+assert.equal(prana.parsed.product.certifications.length, 1)
+assert.equal(prana.parsed.product.certifications[0].certificationId, 'fair-trade-certified')
+assert.equal(prana.parsed.product.certifications[0].affectsPeopleInformation, true)
+assert.equal(prana.parsed.product.certifications[0].affectsEnvironmentalScore, false)
+assert.ok(prana.parsed.product.sustainabilityClaims.some((claim) => /made with organic cotton/i.test(claim)))
+assert.equal(prana.parsed.product.packaging.fulfilment, null)
+assert.equal(prana.parsed.product.packaging.manufacturer, null)
+assert.equal(parsers.scoreRealProduct(prana.parsed.product).certificationAdjustment, 0)
 
 const noMaterial = await fixture('amazon-no-material.html', 'https://www.amazon.com/example/dp/B000FIX003')
 assert.equal(noMaterial.parsed.product.materials.length, 0)
@@ -89,7 +109,8 @@ assert.match(nike.parsed.product.careInstructions, /Machine wash/i)
 const shopify = await fixture('shopify-product.html', 'https://fixture-blue.example/products/responsible-flannel')
 assert.equal(shopify.parsed.product.parserUsed, 'shopify')
 assert.equal(shopify.parsed.product.recycledContentPercentage, 40)
-assert.match(shopify.parsed.product.packaging, /plastic-free/i)
+assert.match(shopify.parsed.product.packaging.fulfilment.description, /plastic-free/i)
+assert.equal(shopify.parsed.product.packaging.manufacturer, null)
 
 const nonClothing = await fixture('non-clothing-product.html', 'https://electronics.example/products/phone')
 assert.equal(nonClothing.parsed.product.isProduct, true)
@@ -110,11 +131,31 @@ const uncertainScore = parsers.scoreRealProduct({ ...full.parsed.product, materi
 assert.equal(uncertainScore.canScore, false)
 assert.equal(uncertainScore.score, null)
 
-const corrected = parsers.applyManualCorrections(noMaterial.parsed.product, { title: 'User confirmed top', materialText: '70% organic cotton, 30% linen', recycledContentPercentage: 0, packaging: 'Paper or card' })
+const corrected = parsers.applyManualCorrections(noMaterial.parsed.product, { title: 'User confirmed top', materialText: '70% organic cotton, 30% linen', recycledContentPercentage: 0, fulfilmentPackaging: 'Recycled paper delivery mailer', fulfilmentPackagingSource: 'Observed delivery option', manufacturerPackaging: 'Individual plastic polybag', manufacturerPackagingSource: 'Product listing' })
 assert.equal(corrected.materials.length, 2)
 assert.equal(corrected.recycledContentPercentage, 0)
 assert.ok(corrected.evidence.some((item) => item.sourceType === 'manual-user-input'))
+assert.equal(corrected.packaging.fulfilment.sourceType, 'user-provided')
+assert.equal(corrected.packaging.manufacturer.sourceLabel, 'User-provided · Product listing')
 assert.equal(parsers.scoreRealProduct(corrected).canScore, true)
+
+const retailerOnly = { ...full.parsed.product, packaging: { fulfilment: { description: 'General recycled-cardboard delivery box policy', material: 'Recycled cardboard', recycledContentPercentage: null, reducedPackagingOption: null, sourceType: 'retailer-policy', sourceLabel: 'Estimated from retailer policy', applicableMarket: 'UK', lastVerified: '2026-08-13', confidence: 'medium' }, manufacturer: null } }
+const policyScore = parsers.scoreRealProduct(retailerOnly)
+assert.equal(policyScore.factors.fulfilmentPackaging.status, 'estimated')
+assert.equal(policyScore.factors.manufacturerPackaging.status, 'unknown')
+assert.equal(policyScore.confidence, 'Medium')
+const retailerNameOnly = { ...partial.parsed.product, retailer: 'Amazon', packaging: { fulfilment: null, manufacturer: null } }
+assert.equal(parsers.scoreRealProduct(retailerNameOnly).factors.fulfilmentPackaging.status, 'unknown', 'Retailer name alone must never create packaging evidence.')
+
+const environmentalCertification = { certificationId: 'test-environmental', displayedName: 'Test Environmental Standard', rawClaim: 'This product is Test Environmental Standard certified', status: 'verified', evidenceSource: 'badge', sourceLabel: 'Test badge', confidence: 'high', affectsEnvironmentalScore: true, affectsPeopleInformation: false }
+assert.equal(parsers.certificationAdjustment([]), 0)
+assert.equal(parsers.certificationAdjustment([{ ...environmentalCertification, status: 'seller-claim' }]), 0)
+assert.equal(parsers.certificationAdjustment([{ ...environmentalCertification, status: 'unverified' }]), 0)
+assert.equal(parsers.certificationAdjustment([environmentalCertification]), 2)
+assert.equal(parsers.certificationAdjustment([environmentalCertification, { ...environmentalCertification, displayedName: 'Alias' }]), 2, 'Aliases of one certification must be deduplicated.')
+assert.equal(parsers.certificationAdjustment([environmentalCertification, { ...environmentalCertification, certificationId: 'test-environmental-2' }, { ...environmentalCertification, certificationId: 'test-environmental-3' }]), 3)
+const capped = parsers.scoreRealProduct({ ...full.parsed.product, certifications: [environmentalCertification, { ...environmentalCertification, certificationId: 'test-environmental-2' }], materials: [{ name: 'Lyocell', percentage: 100, evidence: '100% lyocell' }], recycledContentPercentage: 100 })
+assert.ok(capped.score <= 100)
 
 function writingNames(materials) { return materials.map((item) => item.name) }
 console.log('Parser checks passed: Amazon, H&M, Nike, Shopify, JSON-LD, meta, Threadly, manual correction, category rejection, materials and variation fixtures.')

@@ -45,13 +45,14 @@ export const amazonParser: ProductPageParser = {
     product.weightGrams = parseWeightGrams(evidenceText)
     product.countryOfOrigin = labelledValue(evidenceText, ['Country of origin', 'Origin'])
     product.careInstructions = labelledValue(evidenceText, ['Care instructions', 'Care'])
-    product.packaging = labelledValue(evidenceText, ['Packaging', 'Package type'])
-    const certificationMatches = evidenceText.match(/\b(GOTS|OEKO[- ]?TEX|Global Recycled Standard|GRS certified|Organic Content Standard|OCS certified|Fairtrade)\b/gi) ?? []
-    product.certifications = [...new Set(certificationMatches.map((item) => item.trim()))]
+    product.shipperSeller = labelledValue(evidenceText, ['Shipper / seller', 'Ships from and sold by'])
+    const genericPackaging = labelledValue(evidenceText, ['Packaging', 'Package type'])
+    if (genericPackaging && !product.packaging.fulfilment && !product.packaging.manufacturer) rejected.push('Packaging wording was ambiguous and was not duplicated across both packaging stages.')
     if (product.title) product.evidence.push(makeEvidence('title', product.title, 'amazon-selector', 'Amazon product title', 'high', matched.find((item) => AMAZON_SELECTORS.title.includes(item as never))))
     if (product.price !== null) product.evidence.push(makeEvidence('price', product.price, 'amazon-selector', 'Amazon current price', 'high', matched.find((item) => AMAZON_SELECTORS.price.includes(item as never))))
     if (product.countryOfOrigin) product.evidence.push(makeEvidence('countryOfOrigin', product.countryOfOrigin, 'amazon-selector', 'Amazon product details', 'high'))
     if (product.careInstructions) product.evidence.push(makeEvidence('careInstructions', product.careInstructions, 'amazon-selector', 'Amazon product details', 'high'))
+    if (product.shipperSeller) product.evidence.push(makeEvidence('shipperSeller', product.shipperSeller, 'amazon-selector', 'Amazon product details', 'high'))
     return result(product, matched, false, { title: product.title, priceText, productId: product.productId, evidenceText: evidenceText.slice(0, 3000) }, rejected)
   },
 }

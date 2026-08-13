@@ -15,6 +15,8 @@ interface StatusMessage {
   confidence?: 'High' | 'Medium' | 'Low'
   provisional?: boolean
   hasSufficientEvidence?: boolean
+  baseScore?: number | null
+  certificationAdjustment?: number
 }
 
 const statusCard = document.querySelector<HTMLElement>('.status-card')!
@@ -76,7 +78,7 @@ function setStatus(state: PageState, detail?: string, result?: StatusMessage) {
     const icon = status.colour === 'green' ? '✓' : status.colour === 'amber' ? '−' : status.colour === 'red' ? '!' : '?'
     trafficResult.className = `popup-traffic popup-traffic--${status.colour}`
     trafficResult.setAttribute('aria-label', accessible); trafficResult.title = status.shortExplanation
-    trafficResult.innerHTML = `<i>${icon}</i><span><strong>${formatTrafficLightScore(result?.score ?? null, result?.provisional ?? true, result?.range)}${result?.grade ? ` · ${result.grade}` : ''}</strong><b>${status.label}${result?.provisional && result.score !== null ? ' · Provisional' : ''}</b><small>${result!.confidence} confidence</small></span>`
+    trafficResult.innerHTML = `<i>${icon}</i><span><strong>${formatTrafficLightScore(result?.score ?? null, result?.provisional ?? true, result?.range)}${result?.grade ? ` · ${result.grade}` : ''}</strong><b>${status.label}${result?.provisional && result.score !== null ? ' · Provisional' : ''}</b><small>${result!.confidence} confidence</small><small>${result?.baseScore === null || result?.baseScore === undefined ? 'Base score unavailable' : `Base ${result.baseScore} · verified certification +${result.certificationAdjustment ?? 0}`}</small></span>`
   }
 }
 

@@ -14,6 +14,10 @@ Verified on 12 August 2026 against the presentation-ready source.
 ## Automated behaviour covered
 
 - deterministic complete scores (27 and 78);
+- independent fulfilment-packaging and manufacturer-packaging factors at 5% each, including legacy migration without duplicated evidence;
+- sanitised prAna mentor fixture: 100% Regenerative Organic Cotton, GBP 22.32, care, origin, shipper/seller and Fair Trade people evidence;
+- certification alias deduplication, seller/unverified zero-point handling, social/environmental separation and +3 maximum adjustment;
+- brighter shared Amber palette (`#F59E0B`) across website, popup and injected extension UI;
 - unknown fields remain `null` rather than confirmed zero;
 - provisional cotton score, range and Low confidence;
 - shared structured source metadata;
@@ -40,7 +44,7 @@ The local development and production builds were exercised in connected Chrome:
 3. Product-selector cards showed image, name and price without a Green Score.
 4. Activating EcoMind showed loading and opened the analysis drawer.
 5. Performance Tee showed 27/100, grade D and Medium confidence.
-6. **See what AI extracted** exposed the exact listing text and structured fields.
+6. **See what EcoMind extracted** exposed the exact listing text and structured fields.
 7. The drawer displayed source labels, missing fields and clearly labelled Threadly demo-alternative actions.
 8. Comparison showed Performance Tee against Renew Loop Tee.
 9. Compare and save actions produced exactly 10 demo EcoPoints in total.

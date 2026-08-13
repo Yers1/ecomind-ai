@@ -8,6 +8,8 @@ Built by Team 17 for the Teens in AI AI4Good Incubator 2026, addressing SDG 13: 
 
 > Scores, factor ranges and rewards are educational prototype estimates—not certifications, lifecycle assessments or verified savings. Retailer compatibility is best-effort and no retailer partnership is claimed.
 
+The proposed operating model and latest mentor feedback are recorded in [`BUSINESS_MODEL_CANVAS.md`](BUSINESS_MODEL_CANVAS.md). All named marketplaces, commerce platforms and certification providers are prospective partners only.
+
 ## Traffic-light Green Score
 
 Every analysed result uses the same shared thresholds from `shared/trafficLight.ts`:
@@ -68,7 +70,7 @@ Current adapters:
 - **Amazon US and UK:** best-effort support for clothing pages using centrally defined fallback selectors;
 - **H&M:** JSON-LD enriched with the visible Material & Care and Description & Fit sections;
 - **Nike:** Product/ProductGroup JSON-LD enriched with the visible Product Details section;
-- **Shopify:** Schema.org product data enriched with visible composition, care, origin, certification and packaging wording;
+- **Shopify:** Schema.org product data enriched with visible composition, care, origin, certification-claim and split packaging wording;
 - **Generic JSON-LD:** Product objects, nested `@graph`, ProductGroup variants, offers, brand, category, image, SKU/GTIN, material and additionalProperty;
 - **Generic metadata:** Open Graph product fields and Schema.org `itemprop` fields;
 - **Generic visible page:** conservative fallback for product URL patterns and visible product sections;
@@ -100,10 +102,12 @@ Green Score = Material impact × 35%
             + Estimated carbon × 25%
             + Recycled content × 20%
             + Durability and circularity × 10%
-            + Packaging × 10%
+            + Fulfilment packaging × 5%
+            + Manufacturer packaging × 5%
+            + verified environmental certification adjustment (0 to +3)
 ```
 
-For real products, disclosed materials can feed a labelled EcoMind prototype material-factor range. Recycled content is known only when explicitly disclosed. Packaging can be estimated only from disclosed packaging wording. Carbon and durability remain unknown unless supporting inputs exist. The midpoint is normalised over supported factors and the displayed range includes uncertainty from missing factors.
+For real products, disclosed materials can feed a labelled EcoMind prototype material-factor range. Recycled content is known only when explicitly disclosed. Fulfilment packaging and manufacturer packaging are independent 5% factors and remain unknown when evidence is missing. Carbon and durability remain unknown unless supporting inputs exist. A verified environmental certification may add +2 points, or at most +3 for multiple independently relevant certifications; seller claims, vague language and social/labour certifications add zero environmental points. Products without certification are not penalised.
 
 The material parser recognises common cotton, recycled cotton, polyester, recycled polyester, nylon, elastane/spandex, linen, hemp, wool, viscose/rayon, modal, lyocell/Tencel, acrylic, silk, leather and recycled-fibre wording. Synonyms are normalised while the original text is retained. Unreasonable percentage totals and percentage ranges are flagged as uncertain.
 
@@ -173,7 +177,7 @@ After changing extension source, rebuild it, select **Reload** on `chrome://exte
 3. Select EcoMind AI → **Analyse this product**.
 4. Open the koala.
 5. Confirm the retailer reads Amazon, parser reads `amazon`, and **See what EcoMind extracted** cites Amazon selectors.
-6. Confirm missing carbon, durability or packaging fields remain **Not disclosed**.
+6. Confirm missing carbon, durability, fulfilment-packaging or manufacturer-packaging fields remain **Not disclosed**.
 7. If fabric composition is absent, use the manual panel or explicitly mark it not disclosed.
 8. If colour/size changes the product identifier, use **Re-analyse product** after EcoMind marks the result outdated.
 

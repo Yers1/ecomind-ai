@@ -24,7 +24,7 @@ Expand **See what EcoMind extracted**.
 
 Point out material composition, price and care/origin if present. Then show the breakdown.
 
-“Material evidence can feed a labelled prototype range. Carbon and durability stay unknown without evidence. The fixed formula calculates the midpoint; AI does not invent the score.”
+“Material evidence can feed a labelled prototype range. Manufacturer and fulfilment packaging are separate 5% factors. Carbon and durability stay unknown without evidence. Verified environmental certifications can add at most three transparent prototype points; seller claims and Fair Trade people information add zero environmental points. The fixed formula calculates the result; AI does not invent the score.”
 
 ## 1:25–1:45 — Manual correction
 

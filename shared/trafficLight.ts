@@ -1,5 +1,12 @@
 export type TrafficLightColour = 'green' | 'amber' | 'red' | 'grey'
 
+export const TRAFFIC_LIGHT_COLOURS = {
+  green: { foreground: '#166534', background: '#DCFCE7', indicator: '#22C55E' },
+  amber: { foreground: '#854D0E', background: '#FEF3C7', indicator: '#F59E0B' },
+  red: { foreground: '#991B1B', background: '#FEE2E2', indicator: '#EF4444' },
+  grey: { foreground: '#374151', background: '#F3F4F6', indicator: '#9CA3AF' },
+} as const
+
 export type TrafficLightStatus = {
   colour: TrafficLightColour
   label: string
@@ -28,7 +35,8 @@ export function formatTrafficLightScore(score: number | null, provisional: boole
 
 export function trafficLightAccessibleText(status: TrafficLightStatus, score: number | null, provisional: boolean, confidence: string, range?: [number, number] | null) {
   const scoreText = score === null ? 'score unavailable' : `${provisional ? 'provisional score approximately ' : 'score '}${Math.round(score)} out of 100${range ? `, possible range ${range[0]} to ${range[1]}` : ''}`
-  return `Traffic-light status: ${status.colour}, ${status.label.toLowerCase()}, ${scoreText}. ${confidence} confidence.`
+  const grade = score === null ? '' : ` Grade ${score >= 80 ? 'A' : score >= 65 ? 'B' : score >= 45 ? 'C' : score >= 25 ? 'D' : 'E'}.`
+  return `Traffic-light status: ${status.colour}, ${status.label.toLowerCase()}, ${scoreText}.${grade} ${confidence} confidence.`
 }
 
 export const TRAFFIC_LIGHT_LEGEND = [

@@ -100,7 +100,8 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
             <div className="weight-chip weight-chip--two"><b>25%</b><span>Carbon</span></div>
             <div className="weight-chip weight-chip--three"><b>20%</b><span>Recycled</span></div>
             <div className="weight-chip weight-chip--four"><b>10%</b><span>Durability</span></div>
-            <div className="weight-chip weight-chip--five"><b>10%</b><span>Packaging</span></div>
+            <div className="weight-chip weight-chip--five"><b>5%</b><span>Fulfilment packaging</span></div>
+            <div className="weight-chip weight-chip--six"><b>5%</b><span>Manufacturer packaging</span></div>
           </div>
         </div>
       </section>

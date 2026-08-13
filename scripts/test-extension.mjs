@@ -62,14 +62,14 @@ const threadlyWindow = installDom(await fixture('threadly.html'), 'https://ecomi
 executeContentScript(); await settle()
 assert.ok(root(threadlyWindow), 'The content script must inject a Shadow DOM root on Threadly.')
 assert.match(root(threadlyWindow).textContent, /27\s*\/100/i)
-assert.doesNotMatch(root(threadlyWindow).textContent, /~27\s*\/100/i)
+assert.match(root(threadlyWindow).textContent, /~27\s*\/100/i)
 assert.match(root(threadlyWindow).textContent, /Higher impact/i)
 assert.match(root(threadlyWindow).querySelector('.traffic').getAttribute('aria-label'), /Traffic-light status: red/i)
 assert.ok(root(threadlyWindow).querySelectorAll('.traffic').length >= 2, 'The analysed product and Threadly alternative must both show traffic-light results.')
 assert.ok([...root(threadlyWindow).querySelectorAll('.traffic')].every((item) => item.getAttribute('aria-label')?.startsWith('Traffic-light status:')), 'Every Threadly traffic-light result needs accessible text.')
 assert.match(root(threadlyWindow).textContent, /Threadly demo/i)
 assert.match(root(threadlyWindow).textContent, /Record demo comparison/i)
-assert.equal(runtimeMessages.at(-1)?.state, 'success')
+assert.equal(runtimeMessages.at(-1)?.state, 'missing-data')
 root(threadlyWindow).querySelector('.save').click(); await settle()
 assert.equal(persistedStorage[STORAGE_KEY].points, 0)
 assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 1)
@@ -96,6 +96,15 @@ assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 3)
 assert.equal(persistedStorage[STORAGE_KEY].wishlist[2].retailer, 'Amazon UK')
 assert.ok(persistedStorage[STORAGE_KEY].wishlist[2].materials.length > 0)
 
+const pranaWindow = installDom(await fixture('amazon-prana-certified.html'), 'https://www.amazon.co.uk/example/dp/B0PRANAFIX')
+executeContentScript(); await settle()
+assert.match(root(pranaWindow).textContent, /Regenerative Organic Cotton/i)
+assert.match(root(pranaWindow).textContent, /People certification/i)
+assert.match(root(pranaWindow).textContent, /Fair Trade Certified/i)
+assert.match(root(pranaWindow).textContent, /No verified environmental certification found; no points added or removed/i)
+assert.match(root(pranaWindow).textContent, /Fulfilment packaging[\s\S]*Not disclosed/i)
+assert.match(root(pranaWindow).textContent, /Manufacturer packaging[\s\S]*Not disclosed/i)
+
 const hmWindow = installDom(await fixture('hm-product.html'), 'https://www2.hm.com/en_us/productpage.1234567890.html')
 executeContentScript(); await settle()
 assert.match(root(hmWindow).textContent, /Parser: hm/i)
@@ -115,7 +124,10 @@ assert.equal(runtimeMessages.at(-1)?.state, 'missing-data')
 const manualForm = root(manualWindow).querySelector('#manualForm')
 manualForm.querySelector('[name="materialText"]').value = '70% organic cotton, 30% linen'
 manualForm.querySelector('[name="recycled"]').value = '0'
-manualForm.querySelector('[name="packaging"]').value = 'Paper or card'
+manualForm.querySelector('[name="fulfilmentPackaging"]').value = 'Recycled paper delivery mailer'
+manualForm.querySelector('[name="fulfilmentPackagingSource"]').value = 'Observed delivery option'
+manualForm.querySelector('[name="manufacturerPackaging"]').value = 'Individual plastic polybag'
+manualForm.querySelector('[name="manufacturerPackagingSource"]').value = 'Product listing'
 manualForm.querySelector('[name="remember"]').checked = true
 manualForm.dispatchEvent(new manualWindow.Event('submit', { bubbles: true, cancelable: true })); await settle()
 assert.match(root(manualWindow).textContent, /Provided by user/i)
