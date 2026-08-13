@@ -15,7 +15,8 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <h1>Make greener choices while you shop.</h1>
           <p className="hero__sub">A clear Green Score, honest data gaps and lower-impact options at a similar price.</p>
           <div className="hero__actions">
-            <button className="button button--primary" onClick={() => navigate('demo')}>Try the product demo <ArrowRight size={18} /></button>
+            <button className="button button--primary" onClick={() => navigate('analyse')}>Analyse a product <ArrowRight size={18} /></button>
+            <button className="button button--secondary" onClick={() => navigate('demo')}>Open Demo Mode</button>
             <button className="button button--secondary" onClick={() => navigate('methodology')}>How the score works</button>
           </div>
         </div>
@@ -30,7 +31,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
               <strong>£{heroProduct.price.toFixed(2)}</strong>
             </div>
           </div>
-          <button className="widget-preview" onClick={() => navigate('demo')} aria-label="Open the interactive EcoMind product demo">
+          <button className="widget-preview" onClick={() => navigate('analyse')} aria-label="Open the EcoMind product analysis flow">
             <KoalaMascot size={52} points={75} />
             <span className="preview-locked"><b>Score hidden</b><small>Activate EcoMind to reveal</small></span>
             <ArrowRight size={19} />
@@ -91,7 +92,7 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
           <div>
             <p className="kicker">One transparent methodology</p>
             <h2>The score is explainable by design.</h2>
-            <p>Five environmental factors. Fixed weights. Confidence stays separate, so missing data never looks certain.</p>
+            <p>Six environmental factors. Fixed weights. Confidence stays separate, so missing data never looks certain.</p>
             <button className="text-link" onClick={() => navigate('methodology')}>Read the methodology <ArrowRight size={17} /></button>
           </div>
           <div className="weight-orbit" aria-label="Green Score weights">
@@ -135,8 +136,9 @@ export function LandingPage({ navigate }: { navigate: (page: Page) => void }) {
       <section className="landing-cta">
         <div className="container landing-cta__inner">
           <Brand />
-          <h2>See the full shopping journey.</h2>
-          <button className="button button--primary" onClick={() => navigate('demo')}>Launch product demo <ArrowRight size={18} /></button>
+          <h2>Run the guided prototype test.</h2>
+          <button className="button button--primary" onClick={() => navigate('analyse')}>Analyse a real product <ArrowRight size={18} /></button>
+          <button className="button button--secondary" onClick={() => navigate('demo')}>Open clearly labelled Demo Mode</button>
           <p>Hackathon prototype. Real-page results are provisional estimates; Threadly remains the clearly labelled sample demo. Neither is a certification.</p>
         </div>
       </section>

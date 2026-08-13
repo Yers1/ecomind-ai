@@ -67,7 +67,9 @@ export function extractMaterials(text: string): { materials: ParsedMaterial[]; u
   const percentages = materials.map((item) => item.percentage).filter((value): value is number => value !== null)
   const total = percentages.reduce((sum, value) => sum + value, 0)
   const layered = /\b(shell|outer|lining|body|trim)\b/i.test(source)
-  const uncertain = rejected.length > 0 || (percentages.length > 0 && !layered && (total < 95 || total > 105))
+  const variationDependent = /\b(?:solids?|heathers?|others?|colou?rs?|styles?)\s*:/i.test(source)
+  if (variationDependent) rejected.push('Multiple variation-specific compositions detected; confirm the selected colour or style before scoring.')
+  const uncertain = rejected.length > 0 || variationDependent || (percentages.length > 0 && !layered && (total < 95 || total > 105))
   if (percentages.length > 0 && !layered && (total < 95 || total > 105)) rejected.push(`Composition totals ${total}%, outside the accepted 95–105% range.`)
   return { materials, uncertain, rejected }
 }

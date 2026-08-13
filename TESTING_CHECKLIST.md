@@ -121,7 +121,7 @@
 - [ ] Chrome accepts `dist-extension` through **Load unpacked** without manifest errors.
 - [ ] The manifest requests only `activeTab`, `scripting` and `storage`.
 - [ ] No `history`, broad host or payment-related permission is requested.
-- [ ] The popup distinguishes Amazon, known retailer, generic possible-product and restricted-page hints without reading page contents before activation.
+- [ ] The popup distinguishes Amazon US/UK, Threadly Demo Mode, unsupported marketplace and restricted-page states without reading page contents before activation.
 - [ ] A page initially contains no extension widget.
 - [ ] Selecting **Analyse this product** injects `content.js` through `chrome.scripting`.
 - [ ] The injected widget is rendered inside a Shadow DOM root.
@@ -143,7 +143,11 @@
 - [ ] Verified environmental evidence adds +2 or at most +3; aliases, seller claims and missing certification add zero.
 - [ ] Amber uses `#F59E0B` with icon and text in web and extension results.
 - [ ] Amazon US/UK selector fallbacks extract title, price, image, ASIN, features and labelled detail rows.
-- [ ] H&M, Nike and Shopify adapters enrich structured data without duplicating generic parsing.
+- [ ] H&M, Nike and Shopify adapters remain clearly labelled fixture/regression coverage and are not claimed as live support.
+- [ ] Five current Amazon product URLs are recorded separately as passed, partially passed or failed.
+- [ ] Variation-dependent compositions such as Solids/Heathers with multiple totals withhold the score until confirmed.
+- [ ] At 390 × 844, URL/text capture, review, result, all six guided tasks and the feedback link work without horizontal overflow.
+- [ ] Screenshot upload reaches the review step through actual local OCR and labels the result user-provided.
 - [ ] Generic JSON-LD handles Product, ProductGroup and nested `@graph` records.
 - [ ] Open Graph and `itemprop` fallback works when JSON-LD is absent or malformed.
 - [ ] Material synonyms normalise while original evidence remains visible.

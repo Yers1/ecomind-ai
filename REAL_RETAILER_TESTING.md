@@ -1,61 +1,51 @@
-# Real retailer testing record
+# Real marketplace validation record
 
-Date: 12 August 2026
+Date: 13 August 2026
 
-Public product pages below were opened in connected Chrome and their current DOM/structured product evidence was inspected. No account, cart, cookies, orders or unrelated tabs were read. Automated parser execution is covered separately by sanitized fixtures derived only from the relevant structures. A fresh interactive installation of the new build through `chrome://extensions` remains user-controlled and is not claimed here.
+## Scope and method
 
-| Retailer | URL | Expected adapter | Product and price observed | Material evidence | Missing / uncertainty | Expected confidence and result | Manual correction |
-|---|---|---|---|---|---|---|---|
-| Amazon US | https://www.amazon.com/Amazon-Essentials-Classic-Fit-Short-Sleeve-Multipacks/dp/B0D8TGLHMB | `amazon` | Amazon Essentials Women's Classic-Fit Short-Sleeve V-Neck T-Shirt, Multipacks; localised price element detected | `56% Cotton, 37% Modal, 7% Elastane` in `#productFactsDesktopExpander` | Packaging, carbon and durability absent | Low; provisional score allowed because composition totals 100% | Not required for composition |
-| Amazon UK | https://www.amazon.co.uk/dp/B09TPKBK4J | `amazon` | Amazon Essentials Men's Cotton Regular-Fit Short-Sleeve Crewneck T-Shirt; price absent for selected variation | `Heather: 60% Cotton, 40% Polyester; Others: 100% Cotton` | Composition depends on selected colour and is internally ambiguous | Low; score withheld until one variation's composition is confirmed | Recommended |
-| H&M US | https://www2.hm.com/en_us/productpage.1264833033.html | `hm` | Cotton T-Shirt; `$14.99` | `Cotton 97%, Spandex 3%` in Material & Care | Recycled content, packaging, carbon and durability absent | Low; expected `~47/100`, range `13–86` | No |
-| Nike US | https://www.nike.com/t/sportswear-mens-t-shirt-l3njS8/DZ2989-100 | `nike` | Nike Sportswear Men's T-Shirt; `$29.97` during test | `100% cotton` in Product Details | Recycled content, exact origin, packaging, carbon and durability absent | Low; expected `~48/100`, wide provisional range | No |
-| United By Blue (Shopify) | https://unitedbyblue.com/products/the-mens-responsible-flannel | `shopify` | The Responsible Flannel; `$98.00` | `60% organic cotton, 40% REPREVE recycled polyester` | Carbon and durability absent | Medium; expected `~59/100`, range `34–78` | No |
-| Nike footwear—missing full composition | https://www.nike.com/t/air-max-plus-mens-shoes-x9G2xF/HQ3824-001 | `nike` | Nike Air Max Plus Men's Shoes; `$142.97` in ProductGroup variant offer | Qualitative mesh/synthetic-leather wording; no percentage composition | Full composition, packaging, carbon and durability absent | Low; score withheld | Required before scoring |
-| IKEA non-clothing boundary | https://www.ikea.com/us/en/p/lack-side-table-white-30449908/ | generic product detection | LACK Side table; `$16.99` | Furniture construction materials, not clothing composition | Outside the clothing/textile methodology | Category rejected; no score | Not applicable |
-| Schema.org documentation boundary | https://schema.org/Product | `manual` fallback | Documentation page titled Product; no sale offer | None | Not a retail product detail page | Product not detected; no score | Optional manual fallback remains available |
+The only marketplace claimed as supported is Amazon US/UK clothing product detail pages. Five real Amazon US product pages were opened in the connected browser. The production `amazon` parser and shared `scoreRealProduct` engine were run against the page elements visible in the current DOM. No account, cart, order, cookies, browsing history or unrelated tabs were inspected. No CAPTCHA was solved and no page content was submitted anywhere.
 
-## Selector observations
+This is separate from the sanitised fixtures in `tests/fixtures`. A fixture pass is not counted as a live-page pass.
 
-- Amazon US/UK currently exposed `#productTitle`, `.a-price .a-offscreen`, `#productFactsDesktopExpander`, `#detailBulletsWrapper_feature_div` and `#productDescription`. UK composition varied by colour wording.
-- H&M exposed ProductGroup JSON-LD plus `#section-materialsAndCareAccordion`; current class names were hashed and therefore are not used as stable adapter selectors.
-- Nike exposed ProductGroup JSON-LD and a visible heading named `Product Details`; a location chooser was also present, but the product DOM remained available.
-- United By Blue exposed multiple Schema.org Product blocks, Open Graph product metadata and visible Details content on Shopify.
-- IKEA exposed a real furniture product page and was inspected as the non-clothing category boundary. The generic test fixture confirms this kind of product is rejected before scoring.
-- Schema.org's Product documentation page was opened as a non-product boundary; the sanitized non-product fixture confirms that a heading containing “Product” alone is not enough for automatic scoring.
+Classification:
 
-## Honest testing boundary
+- **Passed:** title and complete, unambiguous material composition extracted; provisional score available.
+- **Partially passed:** product detected, but evidence was insufficient or variation-dependent, so score was withheld.
+- **Failed:** product DOM unavailable/blocked or the parser could not identify a product.
 
-The actual pages were opened and their visible DOM/structured evidence was inspected. Expected scores above are deterministic outputs for the observed normalized evidence, not a claim that the unpacked extension was clicked on every live URL. Production adapters were regression-tested against sanitized structures representing these fields. Chrome's protected extension-management page cannot be automated in this environment, so use the README checklist for the final interactive pass.
+## Results
 
-## Example developer diagnostic
+| Result | Real URL | Visible evidence extracted | Shared-engine result | Missing / limitation |
+|---|---|---|---|---|
+| Passed | https://www.amazon.com/Amazon-Essentials-Classic-Fit-Short-Sleeve-Multipacks/dp/B0D8TGLHMB | Title; localised price; 56% Cotton, 37% Modal, 7% Elastane; care; origin | ~50/100, grade C, Amber/Mixed impact, Low confidence | Recycled content, both packaging stages and weight not disclosed |
+| Partially passed | https://www.amazon.com/Amazon-Essentials-Slim-Fit-Short-Sleeve-Crewneck/dp/B0CD86ZVRS | Title; localised price; `Solids: 100% Cotton; Heathers: 60% Cotton, 40% Polyester` | Score withheld after the new variation safeguard | User must confirm the selected colour/style composition; packaging and recycled content absent |
+| Partially passed | https://www.amazon.com/SheIn-Womens-Sexy-Polka-Sheer/dp/B07JYX55ML | Title; localised price; Polyester named without a reliable percentage in the extracted field | Score withheld, Grey/Not enough information, Low confidence | Complete percentage composition, origin, packaging, recycled content and weight absent |
+| Passed | https://www.amazon.com/SheIn-Womens-Sleeve-Square-Multicolor/dp/B09VGDNXQF | Title; localised price; 100% Polyester; care; origin | ~29/100, grade D, Red/Higher impact, Low confidence | Recycled content, both packaging stages and weight absent |
+| Passed | https://www.amazon.com/Amazon-Essentials-Mens-Slim-fit-Stretch/dp/B07K4FX4WZ | Redirected to the current variation; title; localised price; 98% Polyester, 2% Elastane; care; origin | ~29/100, grade D, Red/Higher impact, Low confidence | Page wording did not independently verify the search-indexed recycled claim; both packaging stages and weight absent |
 
-For the H&M Cotton T-Shirt page observed above, the adapter path and normalized scoring input are expected to look like this (retailer markup can change):
+Summary: **3 passed, 2 partially passed, 0 blocked failures** in this run.
 
-```json
-{
-  "parserUsed": "hm",
-  "matchedSignals": ["ProductGroup JSON-LD", "#section-materialsAndCareAccordion"],
-  "rawEvidence": {
-    "title": "Cotton T-Shirt",
-    "price": "$14.99",
-    "material": "Cotton 97%, Spandex 3%",
-    "weight": "270 g"
-  },
-  "normalizedFields": {
-    "materials": [
-      { "name": "Cotton", "percentage": 97 },
-      { "name": "Elastane", "percentage": 3 }
-    ],
-    "recycledContentPercentage": null,
-    "packaging": null,
-    "weightGrams": 270
-  },
-  "missingFields": ["recycledContent", "packaging", "carbon", "durability"],
-  "score": "~47/100",
-  "possibleRange": "13–86/100",
-  "confidence": "Low"
-}
-```
+## Important observations
 
-The extension exposes equivalent live diagnostics only when `ecomind-debug=true` is present in the product URL or the local diagnostics preference is enabled. Normal users do not see raw diagnostics by default.
+- Prices were localised for the test location. The parser used the displayed value; this has no effect on the Green Score.
+- Amazon displayed repeated detail blocks. The parser deduplicates normalised materials, but a page can still describe several colour-dependent compositions. The new `Solids / Heathers / Others / Colours / Styles` safeguard marks these uncertain and withholds a score.
+- No inspected page disclosed both manufacturer and fulfilment packaging. EcoMind correctly left them separate and unknown.
+- Certification claims are not upgraded from seller wording to independent verification. The redirected golf-pant page did not visibly provide the independently verifiable evidence required for a bonus, so no bonus was added.
+- These results are a dated compatibility sample, not a promise that all Amazon clothing pages work.
+
+## Demo-only and regression-only coverage
+
+- Threadly products, complete scores, designed alternatives and predictable success/error states are Demo Mode.
+- H&M, Nike, Shopify, generic JSON-LD and malformed-page cases are sanitised regression fixtures only in this build.
+- Chrome’s **Load unpacked** confirmation is still a user-controlled check because `chrome://extensions` is a protected browser page.
+
+## Repeat the live test
+
+1. Build and load `dist-extension` using the README.
+2. Open each URL above without signing in.
+3. Select **Analyse this product**.
+4. Compare the drawer’s extracted title, composition and sources with what is visibly rendered.
+5. Record Passed/Partially passed/Failed without correcting the page first.
+6. If a variation changes, re-analyse and record the final URL/ASIN.
+7. Record any CAPTCHA or access block as Failed—do not bypass it.

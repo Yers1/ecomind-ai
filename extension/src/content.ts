@@ -781,6 +781,13 @@ function installVariationWatch(product: ParsedProduct) {
 
 async function runAnalysis() {
   try {
+    const host = location.hostname
+    const amazonSupported = /(^|\.)(amazon\.com|amazon\.co\.uk)$/i.test(host)
+    const demoMode = Boolean(document.querySelector('[data-ecomind-demo-product="true"]'))
+    if (!amazonSupported && !demoMode) {
+      notifyPopup("unsupported", "This marketplace is not supported in the current real-page pilot. Use Amazon US/UK clothing pages or the clearly labelled Threadly Demo Mode.")
+      return
+    }
     notifyPopup(
       "analysing",
       "Reading product evidence from this active page locally.",

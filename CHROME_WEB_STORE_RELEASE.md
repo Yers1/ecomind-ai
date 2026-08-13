@@ -135,7 +135,7 @@ Do not say that no website content is accessed—the extension necessarily reads
 ## 8. Submit for review
 
 1. Complete **Store Listing**, **Privacy**, **Distribution** and any required **Test instructions** tabs.
-2. In test instructions, explain: open a clothing product page or the public Threadly demo, click the extension, select **Analyse this product**, then open the koala.
+2. In test instructions, explain: open an Amazon US/UK clothing product page or the clearly labelled public Threadly Demo Mode, click the extension, select **Analyse this product**, then open the koala. Do not claim other marketplaces as live-supported.
 3. Choose public visibility only when the team is ready for anyone to install it.
 4. Select **Submit for Review**.
 5. If desired, choose deferred publishing so approval does not make the item public automatically.

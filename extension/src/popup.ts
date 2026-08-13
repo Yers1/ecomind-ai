@@ -57,7 +57,7 @@ const labels: Record<PageState, { title: string; detail: string }> = {
   'low-confidence': { title: 'Low-confidence analysis', detail: 'Open the koala to review or correct missing evidence.' },
   'product-changed': { title: 'Product changed', detail: 'The selected variation changed. Re-analyse before using the result.' },
   'unsupported-category': { title: 'Category not supported', detail: 'EcoMind currently scores clothing and textile products.' },
-  unsupported: { title: 'No product detected', detail: 'Open a product detail page, then try again. Manual entry is available after activation.' },
+  unsupported: { title: 'Unsupported marketplace or page', detail: 'Live extraction currently supports Amazon US/UK clothing pages only. Threadly fixtures are Demo Mode.' },
   restricted: { title: 'Restricted browser page', detail: 'Chrome does not allow extensions to analyse this page. Open a normal website.' },
   'access-error': { title: 'Temporary access unavailable', detail: 'Keep this popup open and click Analyse this product again.' },
   error: { title: 'Analysis error', detail: 'The page may have changed. Try the analysis again or use manual entry.' },
@@ -88,10 +88,8 @@ function pageHint(url?: string) {
     const parsed = new URL(url)
     if (!['http:', 'https:'].includes(parsed.protocol)) return { state: 'restricted' as const, retailer: 'Restricted page' }
     if (/(^|\.)(amazon\.com|amazon\.co\.uk)$/i.test(parsed.hostname)) return { state: 'ready' as const, retailer: 'Amazon · best-effort clothing support' }
-    if (/(^|\.)hm\.com$/i.test(parsed.hostname)) return { state: 'ready' as const, retailer: 'H&M' }
-    if (/(^|\.)nike\.com$/i.test(parsed.hostname)) return { state: 'ready' as const, retailer: 'Nike' }
-    if (/ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(parsed.hostname)) return { state: 'ready' as const, retailer: 'Threadly demo' }
-    return { state: 'possible-product' as const, retailer: 'Multi-retailer / structured-data support' }
+    if (/ecomind-ai-two\.vercel\.app|localhost|127\.0\.0\.1/i.test(parsed.hostname)) return { state: 'ready' as const, retailer: 'Threadly · Demo Mode only' }
+    return { state: 'unsupported' as const, retailer: 'Unsupported marketplace' }
   } catch { return { state: 'restricted' as const, retailer: 'Unavailable' } }
 }
 

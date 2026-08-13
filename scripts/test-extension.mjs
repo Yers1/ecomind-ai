@@ -107,14 +107,9 @@ assert.match(root(pranaWindow).textContent, /Manufacturer packaging[\s\S]*Not di
 
 const hmWindow = installDom(await fixture('hm-product.html'), 'https://www2.hm.com/en_us/productpage.1234567890.html')
 executeContentScript(); await settle()
-assert.match(root(hmWindow).textContent, /Parser: hm/i)
-assert.match(root(hmWindow).textContent, /Compare across retailers/i)
-assert.ok([...root(hmWindow).querySelectorAll('.traffic')].every((item) => item.getAttribute('aria-label')?.startsWith('Traffic-light status:')), 'Every saved real-product status needs accessible text.')
-root(hmWindow).querySelector('.compare-previous').click(); await settle()
-assert.equal(persistedStorage[STORAGE_KEY].points, 15)
-assert.equal(persistedStorage[STORAGE_KEY].activities[0].title, 'Real products compared')
-root(hmWindow).querySelector('.compare-previous').click(); await settle()
-assert.equal(persistedStorage[STORAGE_KEY].points, 15, 'Repeated comparison must not award points twice.')
+assert.equal(root(hmWindow), undefined)
+assert.equal(runtimeMessages.at(-1)?.state, 'unsupported')
+assert.match(runtimeMessages.at(-1)?.detail, /marketplace is not supported/i)
 
 const manualWindow = installDom(await fixture('amazon-no-material.html'), 'https://www.amazon.com/example/dp/B000FIX003')
 executeContentScript(); await settle()
@@ -136,15 +131,13 @@ assert.ok(Object.keys(persistedStorage[STORAGE_KEY].manualCorrections).some((key
 
 const unsupportedWindow = installDom(await fixture('non-product.html'), 'https://magazine.example/article/care')
 executeContentScript(); await settle()
-assert.ok(root(unsupportedWindow), 'Manual fallback should be injected on an unsupported normal webpage.')
-assert.match(root(unsupportedWindow).textContent, /Score unavailable/i)
-assert.match(root(unsupportedWindow).textContent, /Help EcoMind complete this analysis/i)
+assert.equal(root(unsupportedWindow), undefined)
 assert.equal(runtimeMessages.at(-1)?.state, 'unsupported')
 
 const categoryWindow = installDom(await fixture('non-clothing-product.html'), 'https://electronics.example/products/phone')
 executeContentScript(); await settle()
-assert.equal(runtimeMessages.at(-1)?.state, 'unsupported-category')
-assert.match(root(categoryWindow).textContent, /currently scores clothing and textile products/i)
+assert.equal(runtimeMessages.at(-1)?.state, 'unsupported')
+assert.equal(root(categoryWindow), undefined)
 
 const variationWindow = installDom(await fixture('amazon-variation.html'), 'https://www.amazon.com/example/dp/B000BLUE01')
 executeContentScript(); await settle()
@@ -155,8 +148,8 @@ assert.match(root(variationWindow).textContent, /Product changed · re-analyse/i
 
 const refreshedAmazon = installDom(await fixture('amazon-full.html'), 'https://www.amazon.co.uk/example/dp/B000FIX001')
 executeContentScript(); await settle()
-assert.equal(persistedStorage[STORAGE_KEY].points, 15)
+assert.equal(persistedStorage[STORAGE_KEY].points, 10)
 assert.equal(persistedStorage[STORAGE_KEY].wishlist.length, 3)
 assert.ok(refreshedAmazon.document.documentElement.contains(refreshedAmazon.document.querySelector('#ecomind-extension-root')))
 
-console.log('Extension integration checks passed: Threadly, Amazon evidence, provisional score, manual correction, cross-retailer comparison, persistence, category rejection, unsupported and variation states.')
+console.log('Extension integration checks passed: Threadly Demo Mode, Amazon evidence, provisional score, manual correction, persistence, honest unsupported-marketplace and variation states.')

@@ -10,7 +10,7 @@ Young people aged 15–24 who shop across multiple online retailers and need a c
 
 ## Product Purpose
 
-EcoMind AI is a privacy-conscious multi-retailer educational decision-support tool. It extracts visible and structured product evidence locally after activation, separates page evidence, user-provided values, estimates and missing data, then applies a published deterministic prototype formula only when clothing evidence is sufficient. Success means users can analyse and compare real clothing pages without universal-retailer claims, certification claims, verified savings or a server-side scraper.
+EcoMind AI is a privacy-conscious, retailer-neutral educational decision-support tool. The current validation pilot deliberately supports only Amazon US/UK clothing pages while the architecture remains adaptable to future retailer partnerships. It extracts visible and structured product evidence locally after activation, separates page evidence, user-provided values, estimates and missing data, then applies a published deterministic prototype formula only when clothing evidence is sufficient. Success means users can analyse and compare real clothing pages without universal-retailer claims, certification claims, verified savings or a server-side scraper.
 
 ## Brand Personality
 
@@ -18,7 +18,7 @@ Supportive, transparent and quietly optimistic. The product should feel credible
 
 ## Anti-references
 
-EcoMind must not resemble greenwashing, an Amazon-only product, an official retailer integration, a scientific certification portal, a points system that rewards consumption, or a developer test harness. Avoid fake compatibility claims, fake alternatives, unexplained AI scores, hidden uncertainty, duplicated actions, inflated sustainability claims and generic eco decoration that obscures the shopping task.
+EcoMind must not be branded or architected as an Amazon-only product, even though Amazon US/UK is the single current live-validation pilot. It must not resemble greenwashing, an official retailer integration, a scientific certification portal, a points system that rewards consumption, or a developer test harness. Avoid fake compatibility claims, fake alternatives, unexplained AI scores, hidden uncertainty, duplicated actions, inflated sustainability claims and generic eco decoration that obscures the shopping task.
 
 ## Design Principles
 

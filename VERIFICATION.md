@@ -1,96 +1,38 @@
 # Verification record
 
-Verified on 12 August 2026 against the presentation-ready source.
+Verified on 13 August 2026 against the production source.
 
-## Commands executed
+## Automated commands
 
-- `npm install` — passed; 190 packages audited, 0 vulnerabilities.
-- `npm run lint` — passed with 0 errors and 0 warnings.
-- `npm run build` — passed TypeScript and Vite production build; 4,596 modules transformed.
-- `npm run build:extension` — generated `dist-extension`.
-- `npx tsc -p extension/tsconfig.json --noEmit` — passed extension TypeScript checks.
-- `npm run test` — passed shared-core, traffic-light/engagement, parser and production extension integration suites.
+- `npm run lint` — passed with no errors.
+- `npm run test` — passed shared core, engagement/accessibility, backend contract, parser regression and production extension-injection suites.
+- `npm run build` — passed TypeScript and Vite production build. OCR is split into a separate lazy-loaded chunk; Vite reports a non-blocking main-chunk size warning.
+- `npm run build:extension` — generated a Manifest V3 build in `dist-extension`.
+- `npm run package:extension` — generated `release/ecomind-ai-chrome-extension.zip`.
+- Package audit after adding OCR/ZIP tooling — 0 vulnerabilities.
 
-## Automated behaviour covered
+The extension integration suite verifies the content-script-injected Shadow DOM widget, Amazon evidence extraction, provisional scoring, manual corrections, unsupported marketplaces, Threadly Demo Mode and wishlist/EcoPoints persistence across a simulated refresh. Manifest assertions verify only `activeTab`, `scripting` and `storage`, with no static content script or broad host/history permission.
 
-- deterministic complete scores (27 and 78);
-- independent fulfilment-packaging and manufacturer-packaging factors at 5% each, including legacy migration without duplicated evidence;
-- sanitised prAna mentor fixture: 100% Regenerative Organic Cotton, GBP 22.32, care, origin, shipper/seller and Fair Trade people evidence;
-- certification alias deduplication, seller/unverified zero-point handling, social/environmental separation and +3 maximum adjustment;
-- brighter shared Amber palette (`#F59E0B`) across website, popup and injected extension UI;
-- unknown fields remain `null` rather than confirmed zero;
-- provisional cotton score, range and Low confidence;
-- shared structured source metadata;
-- production content-script injection and Shadow DOM widget;
-- Amazon, H&M, Nike, Shopify, Threadly, JSON-LD and meta/itemprop adapter selection;
-- malformed structured data, alternate material wording and percentage normalisation;
-- ready, analysing, successful, missing-data, low-confidence, unsupported, unsupported-category, product-changed and error paths;
-- manual corrections labelled as user-provided, with opt-in persistence;
-- real cross-retailer comparison and the clearly labelled Threadly demo comparison;
-- wishlist and EcoPoints persistence;
-- duplicate reward prevention.
-- exact red/amber/green threshold boundaries and grey insufficient-evidence handling;
-- provisional score formatting and accessible traffic-light text for every status;
-- matching website/extension traffic-light imports and no pre-analysis result;
-- timestamped EcoPoint events, period reset calculations, ties, rank changes and weekly caps;
-- optional leaderboard profile lifecycle, nickname validation and repository abstraction.
+## Real marketplace run
 
-## Browser journey
+Five live Amazon US clothing product pages were opened and current visible product elements were passed to the production parser and shared scoring engine: 3 passed and 2 partially passed. One partial result had no complete percentage; the other contained variation-dependent Solids/Heathers compositions and now triggers a score-withholding safeguard. No CAPTCHA appeared. Exact URLs and fields are in [REAL_RETAILER_TESTING.md](REAL_RETAILER_TESTING.md).
 
-The local development and production builds were exercised in connected Chrome:
+Sanitised Amazon, H&M, Nike, Shopify, Schema.org and Threadly fixtures passed separately. Only Amazon US/UK is claimed as the live marketplace pilot; fixture passes are not counted as real compatibility.
 
-1. Threadly opened without the EcoMind site navigation.
-2. Public production mode hid **Normal state** and **Test error**.
-3. Product-selector cards showed image, name and price without a Green Score.
-4. Activating EcoMind showed loading and opened the analysis drawer.
-5. Performance Tee showed 27/100, grade D and Medium confidence.
-6. **See what EcoMind extracted** exposed the exact listing text and structured fields.
-7. The drawer displayed source labels, missing fields and clearly labelled Threadly demo-alternative actions.
-8. Comparison showed Performance Tee against Renew Loop Tee.
-9. Compare and save actions produced exactly 10 demo EcoPoints in total.
-10. The dashboard showed one analysis, one comparison, one saved alternative and matching activity.
-11. Refresh preserved the dashboard totals and wishlist.
-12. Cotton Tee showed `~51/100`, Low confidence and a 35–66 range.
-13. Renew Loop Tee showed 78/100 and High confidence without a provisional label.
-14. The forced error state appeared and retry recovered to a successful result.
-15. Escape/focus behaviour, inert background, unique action labels and horizontal overflow at the connected desktop viewport were checked through DOM state, not only visual inspection.
-16. Landing, methodology and privacy pages were opened in the production preview and their required content was confirmed.
-17. The updated local landing page was re-opened in connected Chrome after the multi-retailer changes; navigation and the complete Threadly analysis drawer were exercised successfully.
+## Mobile production-browser run
 
-The connected Chrome surface was 1536 × 720 and did not expose a viewport-resize control. Responsive CSS includes breakpoints at 1050, 820 and 560 pixels; the 390 × 844 drawer layout should receive a final manual device-toolbar check before presenting. This record does not claim that exact viewport was interactively tested.
+The production preview was exercised at exactly **390×844**:
 
-## Manifest and privacy
+1. Analyse page loaded with the six guided tasks.
+2. Amazon URL validation and visible-text capture worked.
+3. Extracted evidence appeared in the editable review step.
+4. Confirmation produced `~47/100`, grade C, Amber/Mixed impact and Medium confidence from the shared engine.
+5. Breakdown, missing/source evidence, alternative policy and privacy sections opened.
+6. Task progress reached 6/6 and displayed the feedback link.
+7. Document width remained within the viewport with no horizontal overflow.
 
-- Manifest version is 3.
-- Permissions are exactly `activeTab`, `scripting` and `storage`.
-- There are no `host_permissions`, history, payment, cookie or network permissions.
-- No static content script is registered; the popup calls `chrome.scripting.executeScript` only after user activation.
-- The content script runs only after the popup action and then selects a retailer-specific, generic structured-data or manual adapter.
-- Product extraction, score calculation, manual correction and persistence run locally.
-- Manifest assertions are part of `test:extension`: exactly the three permissions above, no `host_permissions`, and no static `content_scripts` registration.
+The real screenshot upload control was also exercised. Local Tesseract OCR extracted `100% Cotton` and opened the review step. The test screenshot also demonstrated that OCR can misread a title, which is why the UI requires review and labels OCR as low/medium-confidence user-provided evidence.
 
-The statement above describes an unconfigured extension build. A configured Supabase build adds exactly the configured project origin to `host_permissions`; no wildcard retailer permission is added. Hosted authentication, RLS, multi-account and cross-device verification remain pending until the public Supabase configuration and disposable test accounts are supplied.
+## Honest remaining boundary
 
-## Local Supabase verification — 13 August 2026
-
-- `npx supabase db reset` applied `202608130001_real_leaderboard.sql` cleanly.
-- `npx supabase db lint --level warning` reported no schema errors.
-- `npm run test:supabase:local` passed with three independent authenticated sessions.
-- Accounts A and B saw the same public rows and account C remained opted out.
-- Server-side fixed points, duplicate rejection and arbitrary action/point rejection passed.
-- Account B could not read A's private events, edit A's profile, call the private badge helper or directly insert point rows.
-- A second authenticated session restored A's backend total.
-- Opt-out removed A from public results without deleting private points.
-- Deleting C removed its Auth user, profile, point event, challenge completion and backend preference.
-- The hosted Supabase project, passwordless email delivery, website/extension same-account result and production redeployment are not marked verified because no project URL or anon key is configured.
-
-## Real-retailer validation
-
-- Current public product DOM was inspected in connected Chrome for Amazon US, Amazon UK, H&M US, Nike US and United By Blue (Shopify).
-- A Nike footwear page with missing percentage composition was included specifically to verify the score-withheld boundary.
-- Sanitized fixtures derived from only the relevant structures run through the actual production parser bundle in automated tests.
-- Details and the honest interactive-installation boundary are recorded in `REAL_RETAILER_TESTING.md`.
-
-## Chrome installation boundary
-
-The generated manifest parses and the complete production bundle is ready in `dist-extension`. Browser automation cannot control Chrome's protected `chrome://extensions` page, so this verification does not claim a fresh interactive **Load unpacked** installation. Follow the exact README steps for that final user-controlled confirmation.
+Chrome’s protected `chrome://extensions` screen cannot be automated by this environment. The manifest parses and the generated bundle passed integration tests, but a fresh human **Load unpacked** confirmation remains required. The official feedback-survey URL was not present in the repository; without `VITE_FEEDBACK_SURVEY_URL`, the final button opens a local-only fallback survey rather than inventing an external form.

@@ -6,7 +6,7 @@ import { build } from 'esbuild'
 import { Window } from 'happy-dom'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const bundle = await build({ stdin: { contents: "export * from './shared/parsers/parserRegistry.ts'; export * from './shared/parsers/materialExtraction.ts'; export * from './shared/realProductScoring.ts'; export * from './shared/certifications/certificationRegistry.ts'", resolveDir: root, sourcefile: 'parser-test-entry.ts', loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', target: 'node20', write: false })
+const bundle = await build({ stdin: { contents: "export * from './shared/parsers/parserRegistry.ts'; export * from './shared/parsers/materialExtraction.ts'; export * from './shared/realProductScoring.ts'; export * from './shared/certifications/certificationRegistry.ts'; export * from './shared/capturedProduct.ts'", resolveDir: root, sourcefile: 'parser-test-entry.ts', loader: 'ts' }, bundle: true, format: 'esm', platform: 'node', target: 'node20', write: false })
 const parsers = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`)
 
 async function fixture(name, url) {
@@ -55,6 +55,14 @@ assert.ok(prana.parsed.product.sustainabilityClaims.some((claim) => /made with o
 assert.equal(prana.parsed.product.packaging.fulfilment, null)
 assert.equal(prana.parsed.product.packaging.manufacturer, null)
 assert.equal(parsers.scoreRealProduct(prana.parsed.product).certificationAdjustment, 0)
+const mobileCapture = parsers.productFromCapturedText("prAna Women's Everyday Tank\n£22.32\nFabric type: 100% Regenerative Organic Cotton\nFair Trade Certified practices", 'https://www.amazon.co.uk/dp/B0PRANAFIX', 'screenshot-ocr')
+assert.equal(mobileCapture.title, "prAna Women's Everyday Tank")
+assert.deepEqual(mobileCapture.materials.map((item) => [item.name, item.percentage]), [['Regenerative Organic Cotton', 100]])
+assert.equal(mobileCapture.certifications[0].status, 'unverified')
+assert.equal(mobileCapture.certifications[0].affectsEnvironmentalScore, false)
+assert.equal(parsers.scoreRealProduct(mobileCapture).certificationAdjustment, 0)
+assert.equal(parsers.isSupportedMobileUrl('https://www.amazon.co.uk/dp/B0PRANAFIX'), true)
+assert.equal(parsers.isSupportedMobileUrl('https://www.nike.com/t/example'), false)
 
 const noMaterial = await fixture('amazon-no-material.html', 'https://www.amazon.com/example/dp/B000FIX003')
 assert.equal(noMaterial.parsed.product.materials.length, 0)
@@ -126,6 +134,7 @@ const materialCases = [
 ]
 for (const [text, expected] of materialCases) assert.deepEqual(parsers.extractMaterials(text).materials.map((item) => [item.name, item.percentage]), expected)
 assert.equal(parsers.extractMaterials('80% cotton, 40% polyester').uncertain, true)
+assert.equal(parsers.extractMaterials('Solids: 100% Cotton; Heathers: 60% Cotton, 40% Polyester').uncertain, true)
 assert.equal(parsers.extractMaterials('Material composition not disclosed').materials.length, 0)
 const uncertainScore = parsers.scoreRealProduct({ ...full.parsed.product, materials: parsers.extractMaterials('80% cotton, 40% polyester').materials, materialCompositionUncertain: true })
 assert.equal(uncertainScore.canScore, false)
