@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && npm run package:extension && vite build",
     "build:extension": "node scripts/build-extension.mjs",
     "package:extension": "npm run build:extension && node scripts/package-extension.mjs",
     "test": "node scripts/test-core.mjs && node scripts/test-engagement.mjs && node scripts/test-backend-contract.mjs && node scripts/test-parsers.mjs && npm run test:extension",

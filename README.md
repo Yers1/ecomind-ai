@@ -102,6 +102,8 @@ Output: [`release/ecomind-ai-chrome-extension.zip`](release/ecomind-ai-chrome-ex
 
 The same generated file is copied to `public/downloads/` and deployed at `https://ecomind-ai-two.vercel.app/downloads/ecomind-ai-chrome-extension.zip`, so testers do not need GitHub.
 
+The Vercel production build also runs `package:extension`. After the public Supabase variables are configured in Vercel and a new deployment is created, the direct-download ZIP is automatically rebuilt with the same Supabase project URL, public anon/publishable key and one exact Supabase host permission. No service-role key is used.
+
 ## Guided prototype test
 
 The **Analyse a product** page visibly tracks six respondent tasks:
