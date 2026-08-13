@@ -6,6 +6,20 @@ import type { CertificationEvidence } from '../../shared/certifications/certific
 
 export const STORAGE_KEY = 'ecomindExtensionStateV2'
 
+export type MascotPreference = 'koala' | 'panda' | 'polar-bear' | 'leaf' | 'sprout'
+
+export const MASCOT_OPTIONS: Array<{ id: MascotPreference; label: string; glyph: string }> = [
+  { id: 'koala', label: 'Koala', glyph: '🐨' },
+  { id: 'panda', label: 'Panda', glyph: '🐼' },
+  { id: 'polar-bear', label: 'Polar Bear', glyph: '🐻‍❄️' },
+  { id: 'leaf', label: 'Leaf', glyph: '🌿' },
+  { id: 'sprout', label: 'Sprout', glyph: '🌱' },
+]
+
+export function mascotDetails(id: MascotPreference) {
+  return MASCOT_OPTIONS.find((option) => option.id === id) ?? MASCOT_OPTIONS[0]
+}
+
 export interface ExtensionWishlistItem {
   id: string
   productName: string
@@ -50,6 +64,7 @@ export interface ExtensionState {
   preferences: {
     showWidgetAfterAnalysis: boolean
     diagnosticsEnabled: boolean
+    mascot: MascotPreference
   }
 }
 
@@ -68,6 +83,7 @@ export const DEFAULT_EXTENSION_STATE: ExtensionState = {
   preferences: {
     showWidgetAfterAnalysis: true,
     diagnosticsEnabled: false,
+    mascot: 'koala',
   },
 }
 

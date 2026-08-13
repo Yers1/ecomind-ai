@@ -15,6 +15,7 @@
     "test:engagement": "node scripts/test-engagement.mjs",
     "test:parsers": "node scripts/test-parsers.mjs",
     "test:extension": "npm run build:extension && node scripts/test-extension.mjs",
+    "test:responsive": "node scripts/test-responsive.mjs",
     "preview": "vite preview",
     "lint": "eslint ."
   },

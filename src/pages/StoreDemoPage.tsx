@@ -123,7 +123,7 @@ export function StoreDemoPage({ navigate }: { navigate: (page: Page) => void }) 
         onSave={(item) => requireProfile({ type: 'save', product: item })}
         onCompare={(current, alternative) => {
           const awarded = recordComparison(current.id, alternative.productName)
-          setToast(awarded ? 'Alternative compared. +5 demo EcoPoints.' : 'Comparison reopened. Reward already recorded.')
+          setToast(awarded ? 'Small choice, meaningful impact. Lower-impact alternative compared. +5 demo EcoPoints.' : 'Your choice supports more sustainable consumption. Comparison reopened; reward already recorded.')
         }}
         onView={(item) => { setSelectedId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
       />

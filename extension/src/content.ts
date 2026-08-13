@@ -35,6 +35,7 @@ import {
   writeExtensionState,
   type ExtensionState,
   type ExtensionWishlistItem,
+  mascotDetails,
 } from "./shared";
 
 type AnalysisState =
@@ -166,8 +167,9 @@ function notifyPopup(
   );
 }
 
-function koalaMarkup() {
-  return '<span class="koala" role="img" aria-label="EcoMind koala"><i class="ear left"></i><i class="ear right"></i><i class="face"><b class="eye left"></b><b class="eye right"></b><b class="nose"></b></i><i class="leaf"></i></span>';
+function mascotMarkup(state: ExtensionState) {
+  const mascot = mascotDetails(state.preferences.mascot);
+  return `<span class="mascot" role="img" aria-label="EcoMind ${escapeHtml(mascot.label)}">${mascot.glyph}</span>`;
 }
 
 function displayAnalysisForRecord(
@@ -345,6 +347,8 @@ const trafficStyles = `.traffic{display:flex;align-items:center;gap:9px;min-widt
 
 const brightTrafficStyles = `.traffic--green .traffic-mark,.traffic-legend i.green{background:#22c55e;color:#123d24}.traffic--amber .traffic-mark,.traffic-legend i.amber{background:#f59e0b;color:#3d2600}.traffic--amber b{color:#854d0e}.traffic--red .traffic-mark,.traffic-legend i.red{background:#ef4444}.extract-subhead{margin:0;padding:0 12px 8px;font-size:10px}.compare-packaging{margin-top:7px}.compare-packaging small{margin-top:4px}`;
 
+const mentorStyles = `.widget{min-width:0;min-height:52px;padding:7px 11px 7px 7px;gap:8px;border:1px solid rgba(255,255,255,.18);border-radius:26px;box-shadow:0 5px 16px rgba(8,35,31,.22)}.widget .mascot{width:36px;height:36px;display:grid;place-items:center;flex:none;border-radius:50%;background:rgba(255,255,255,.1);font-size:21px;filter:saturate(.75)}.widget>.traffic{min-width:0}.widget>.traffic .traffic-mark{width:26px;height:26px}.widget>.traffic span:last-child{min-width:92px}.widget>.traffic strong{font-size:11px}.widget>.traffic b{font-size:8px}.widget>.traffic small{display:none}.widget .copy{display:none}.drawer-header__actions{display:flex;gap:7px}.drawer-header__actions button{height:38px;padding:0 11px;border:1px solid #d4dfd8;border-radius:10px;background:#fff;color:#28453e;font-size:10px;font-weight:750}.drawer-header__actions .close{width:38px;padding:0;font-size:20px}.companion-panel{margin-top:15px;padding:12px;border:1px solid #d9e3dd;border-radius:11px;background:#fff}.companion-panel h3{margin:0;font-size:12px}.companion-panel p{margin:4px 0 10px;color:#667873;font-size:9px}.mascot-options{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}.mascot-option{min-height:47px;padding:5px;border:1px solid #d8e2dc;border-radius:9px;background:#f7f9f8;color:#435a54;font-size:18px}.mascot-option span{display:block;margin-top:2px;font-size:7px}.mascot-option[aria-pressed=true]{border-color:#16734d;background:#e7f5ec;color:#0c5a3a}.widget-preference{margin-top:9px;display:flex;align-items:flex-start;gap:7px;color:#536a64;font-size:9px}.widget-preference input{margin-top:1px;accent-color:#16734d}.emotional-note{display:flex;align-items:center;gap:8px}.emotional-note .mascot{font-size:18px}@media(max-width:620px){.widget{right:10px;left:auto;bottom:10px}.widget>.traffic span:last-child{min-width:86px}.mascot-options{grid-template-columns:repeat(3,1fr)}}`;
+
 function renderExtension(
   product: ParsedProduct,
   analysis: DisplayAnalysis,
@@ -375,19 +379,22 @@ function renderExtension(
   const diagnosticsMarkup = debugEnabled
     ? `<details class="diagnostics"><summary>Developer diagnostics</summary><pre>${escapeHtml(JSON.stringify({ ...diagnostics, finalConfidence: analysis.confidence, scoringInputs: analysis.factors }, null, 2))}</pre></details>`
     : "";
-  shadow.innerHTML = `<style>${styles}</style><button class="widget" type="button" aria-label="${escapeHtml(trafficLightAccessibleText(status, analysis.score, analysis.provisional, analysis.confidence, analysis.range))} Open EcoMind analysis.">${koalaMarkup()}${trafficMarkup(analysis, true)}<span class="copy"><strong>${escapeHtml(status.label)}</strong><small>${escapeHtml(analysis.confidence)} confidence · Open analysis</small></span></button><div class="layer" role="presentation"><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ecomind-title"><header class="drawer-header"><div><strong>EcoMind analysis</strong><span>Local · ${escapeHtml(product.retailer)} · ${escapeHtml(product.parserUsed)}</span></div><button class="close" type="button" aria-label="Close EcoMind analysis">×</button></header><div class="drawer-body"><section class="product">${product.imageUrl ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.title ?? "Product image")}">` : ""}<div><span>${escapeHtml(product.retailer)}</span><h2 id="ecomind-title">${escapeHtml(product.title ?? "Product information needed")}</h2><b>${escapeHtml(formatMoney(product))}</b></div></section><div class="meta-row"><span>Parser: ${escapeHtml(product.parserUsed)}</span><span>${escapeHtml(product.url)}</span><span>${analysis.factors.filter((item) => item.result.status !== "unknown").length}/5 factors supported</span></div><section class="score-hero">${trafficMarkup(analysis)}<div class="score-copy"><h3>${escapeHtml(analysis.explanation)}</h3><p>${escapeHtml(rangeLabel)}. Missing evidence is unknown, never confirmed zero.</p></div></section><details class="traffic-legend"><summary>How to read the traffic light</summary><ul><li><i class="green">✓</i> Green: Lower impact based on available evidence</li><li><i class="amber">−</i> Amber: Mixed environmental impact</li><li><i class="red">!</i> Red: Higher environmental impact</li><li><i class="grey">?</i> Grey: Not enough information</li></ul><p>Product status only. A green result is not a certification and leaderboard positions never use these colours.</p></details><div class="local-note"><strong>Local evidence analysis.</strong> EcoMind structures product information from this active page. The deterministic prototype formula—not AI—calculates the provisional midpoint and range.</div>${extractedMarkup(product)}<section class="section"><h3>Score breakdown</h3><div class="breakdown">${analysis.factors.map(factorMarkup).join("")}</div></section><section class="missing"><h3>Missing information</h3><ul>${missing}</ul><p>Absence of disclosure does not prove poor environmental performance. It lowers confidence and widens the range.</p></section>${manualMarkup(product)}${comparisonMarkup(state, product)}${diagnosticsMarkup}<p class="disclaimer">Provisional scores are estimates, not certifications. Retail pages can be incomplete or change without notice. EcoMind sends no product information to a server.</p></div><footer class="drawer-footer"><button class="save" type="button">Save for comparison</button></footer></aside></div>`;
+  const selectedMascot = mascotDetails(state.preferences.mascot);
+  const mascotOptions = ['koala','panda','polar-bear','leaf','sprout'].map((id) => { const option = mascotDetails(id as ExtensionState['preferences']['mascot']); return `<button class="mascot-option" type="button" data-mascot="${option.id}" aria-pressed="${option.id === selectedMascot.id}">${option.glyph}<span>${escapeHtml(option.label)}</span></button>` }).join('');
+  shadow.innerHTML = `<style>${styles}</style><button class="widget" type="button" aria-label="${escapeHtml(trafficLightAccessibleText(status, analysis.score, analysis.provisional, analysis.confidence, analysis.range))} Open EcoMind analysis.">${mascotMarkup(state)}${trafficMarkup(analysis, true)}<span class="copy"><strong>${escapeHtml(status.label)}</strong><small>${escapeHtml(analysis.confidence)} confidence · Open analysis</small></span></button><div class="layer" role="presentation"><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ecomind-title"><header class="drawer-header"><div><strong>EcoMind analysis</strong><span>Local · ${escapeHtml(product.retailer)} · ${escapeHtml(product.parserUsed)}</span></div><div class="drawer-header__actions"><button class="hide-widget" type="button">Hide on this page</button><button class="close" type="button" aria-label="Minimise EcoMind analysis">−</button></div></header><div class="drawer-body"><section class="product">${product.imageUrl ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.title ?? "Product image")}">` : ""}<div><span>${escapeHtml(product.retailer)}</span><h2 id="ecomind-title">${escapeHtml(product.title ?? "Product information needed")}</h2><b>${escapeHtml(formatMoney(product))}</b></div></section><div class="meta-row"><span>Parser: ${escapeHtml(product.parserUsed)}</span><span>${escapeHtml(product.url)}</span><span>${analysis.factors.filter((item) => item.result.status !== "unknown").length}/5 factors supported</span></div><section class="score-hero">${trafficMarkup(analysis)}<div class="score-copy"><h3>${escapeHtml(analysis.explanation)}</h3><p>${escapeHtml(rangeLabel)}. Missing evidence is unknown, never confirmed zero.</p></div></section><details class="traffic-legend"><summary>How to read the traffic light</summary><ul><li><i class="green">✓</i> Green: Lower impact based on available evidence</li><li><i class="amber">−</i> Amber: Mixed environmental impact</li><li><i class="red">!</i> Red: Higher impact</li><li><i class="grey">?</i> Grey: Not enough information</li></ul><p>Product status only. A green result is not a certification and leaderboard positions never use these colours.</p></details><div class="local-note"><strong>Local evidence analysis.</strong> EcoMind structures product information from this active page. The deterministic prototype formula—not AI—calculates the provisional midpoint and range.</div>${extractedMarkup(product)}<section class="section"><h3>Score breakdown</h3><div class="breakdown">${analysis.factors.map(factorMarkup).join("")}</div></section><section class="missing"><h3>Missing information</h3><ul>${missing}</ul><p>Absence of disclosure does not prove poor performance. It lowers confidence and widens the range.</p></section>${manualMarkup(product)}${comparisonMarkup(state, product)}<section class="companion-panel"><h3>${selectedMascot.glyph} Your EcoMind companion</h3><p>Choose a calm visual cue. This preference stays on this device.</p><div class="mascot-options">${mascotOptions}</div><label class="widget-preference"><input class="auto-widget" type="checkbox" ${state.preferences.showWidgetAfterAnalysis ? 'checked' : ''}> Show the minimised widget automatically after analysis</label></section>${diagnosticsMarkup}<p class="disclaimer">Provisional scores are estimates, not certifications. Retail pages can be incomplete or change without notice. EcoMind sends no product information to a server.</p></div><footer class="drawer-footer"><button class="save" type="button">Save for comparison</button></footer></aside></div>`;
 
   const factorCount = shadow.querySelector<HTMLElement>(".meta-row span:last-child");
   if (factorCount) factorCount.textContent = `${analysis.factors.filter((item) => item.result.status !== "unknown").length}/6 factors supported`;
   const widgetSummary = shadow.querySelector<HTMLElement>(".widget .copy small");
   if (widgetSummary) widgetSummary.textContent = `${analysis.confidence} confidence · Packaging 5% + 5% · Open analysis`;
   const trafficStyle = document.createElement("style");
-  trafficStyle.textContent = trafficStyles + brightTrafficStyles;
+  trafficStyle.textContent = trafficStyles + brightTrafficStyles + mentorStyles;
   shadow.prepend(trafficStyle);
   const layer = shadow.querySelector<HTMLElement>(".layer")!;
   const widget = shadow.querySelector<HTMLButtonElement>(".widget")!;
   const close = shadow.querySelector<HTMLButtonElement>(".close")!;
   const openDrawer = () => {
+    host.hidden = false;
     layer.classList.add("open");
     document.body.inert = true;
     close.focus();
@@ -399,6 +406,11 @@ function renderExtension(
   };
   widget.addEventListener("click", openDrawer);
   close.addEventListener("click", closeDrawer);
+  shadow.querySelector<HTMLButtonElement>(".hide-widget")?.addEventListener("click", () => {
+    closeDrawer();
+    host.hidden = true;
+    showToast("Widget hidden on this page. Use the EcoMind toolbar button to bring it back.");
+  });
   layer.addEventListener("click", (event) => {
     if (event.target === layer) closeDrawer();
   });
@@ -444,7 +456,24 @@ function renderExtension(
       "submit",
       (event) => void submitManualCorrection(event, product),
     );
-  openDrawer();
+  shadow.querySelectorAll<HTMLButtonElement>(".mascot-option").forEach((button) => button.addEventListener("click", async () => {
+    const next = await readExtensionState();
+    next.preferences.mascot = button.dataset.mascot as ExtensionState['preferences']['mascot'];
+    await writeExtensionState(next);
+    renderExtension(product, analysis, next, diagnostics);
+    showToast(`${mascotDetails(next.preferences.mascot).glyph} Companion updated. Small choice, meaningful impact.`);
+  }));
+  shadow.querySelector<HTMLInputElement>(".auto-widget")?.addEventListener("change", async (event) => {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const next = await readExtensionState();
+    next.preferences.showWidgetAfterAnalysis = checked;
+    await writeExtensionState(next);
+    if (!next.preferences.showWidgetAfterAnalysis) {
+      closeDrawer();
+      host.hidden = true;
+    }
+  });
+  host.hidden = !state.preferences.showWidgetAfterAnalysis;
 }
 
 function showToast(message: string) {
@@ -527,8 +556,8 @@ async function recordRealComparison(product: ParsedProduct) {
     await writeExtensionState(state);
     showToast(
       state.backendAccountId
-        ? "Comparison recorded. Waiting for backend confirmation."
-        : "Comparison recorded locally. +5 EcoPoints.",
+        ? `${mascotDetails(state.preferences.mascot).glyph} Your choice supports more sustainable consumption. Comparison is waiting for backend confirmation.`
+        : `${mascotDetails(state.preferences.mascot).glyph} Your choice supports more sustainable consumption. Comparison recorded locally. +5 EcoPoints.`,
     );
   } else showToast("This comparison is already recorded.");
 }
@@ -566,8 +595,8 @@ async function recordThreadlyComparison(product: ParsedProduct) {
     await writeExtensionState(state);
     showToast(
       state.backendAccountId
-        ? "Comparison waiting for backend confirmation."
-        : "Demo comparison recorded locally. +5 EcoPoints.",
+        ? `${mascotDetails(state.preferences.mascot).glyph} Small choice, meaningful impact. Comparison is waiting for backend confirmation.`
+        : `${mascotDetails(state.preferences.mascot).glyph} Small choice, meaningful impact. Demo comparison recorded locally. +5 EcoPoints.`,
     );
   } else showToast("This demo comparison is already recorded.");
 }
@@ -634,8 +663,8 @@ async function saveThreadlyAlternative(product: ParsedProduct) {
   await writeExtensionState(state);
   showToast(
     index >= 0
-      ? "Saved demo alternative updated."
-      : "Demo alternative saved. +5 demo EcoPoints.",
+      ? `${mascotDetails(state.preferences.mascot).glyph} Lower-impact demo option updated.`
+      : `${mascotDetails(state.preferences.mascot).glyph} Thank you for choosing a lower-impact option. Saved locally. +5 demo EcoPoints.`,
   );
 }
 
@@ -871,11 +900,21 @@ chrome.runtime.onMessage.addListener(
       } satisfies StatusMessage);
     if (
       message.type === "ECOMIND_STATUS_UPDATE" &&
-      message.detail === "open-widget"
+      (message.detail === "open-widget" || message.detail === "show-widget")
     ) {
+      const host = document.getElementById(ROOT_ID);
+      if (host) host.hidden = false;
       shadow?.querySelector<HTMLElement>(".layer")?.classList.add("open");
       document.body.inert = true;
       shadow?.querySelector<HTMLButtonElement>(".close")?.focus();
+    }
+    if (message.type === "ECOMIND_STATUS_UPDATE" && message.detail === "disable-widget") {
+      const host = document.getElementById(ROOT_ID);
+      document.body.inert = false;
+      if (host) host.hidden = true;
+    }
+    if (message.type === "ECOMIND_STATUS_UPDATE" && message.detail === "preferences-changed" && currentProduct && currentAnalysis && currentDiagnostics) {
+      void readExtensionState().then((state) => renderExtension(currentProduct!, currentAnalysis!, state, currentDiagnostics!));
     }
     if (
       message.type === "ECOMIND_STATUS_UPDATE" &&

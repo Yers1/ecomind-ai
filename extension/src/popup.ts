@@ -1,4 +1,4 @@
-import { readExtensionState, STORAGE_KEY, type ExtensionState } from './shared'
+import { mascotDetails, readExtensionState, STORAGE_KEY, writeExtensionState, type ExtensionState, type MascotPreference } from './shared'
 import { getKoalaLevel, periodSummary } from '../../shared/ecoPoints'
 import { formatTrafficLightScore, getTrafficLightStatus, trafficLightAccessibleText } from '../../shared/trafficLight'
 import { extensionBackendConfigured, extensionRepository, extensionSupabase, importExtensionProgress, syncExtensionQueue } from './backend'
@@ -42,6 +42,9 @@ const syncButton = document.querySelector<HTMLButtonElement>('#syncButton')!
 const importButton = document.querySelector<HTMLButtonElement>('#importButton')!
 const signOutButton = document.querySelector<HTMLButtonElement>('#signOutButton')!
 const syncStatus = document.querySelector<HTMLElement>('#syncStatus')!
+const mascotSelect = document.querySelector<HTMLSelectElement>('#mascotSelect')!
+const brandMascot = document.querySelector<HTMLElement>('#brandMascot')!
+const autoWidgetToggle = document.querySelector<HTMLInputElement>('#autoWidgetToggle')!
 let otpSent = false
 
 let activeTab: chrome.tabs.Tab | undefined
@@ -117,7 +120,13 @@ function sendToTab(message: StatusMessage): Promise<StatusMessage | undefined> {
 }
 
 async function initialise() {
-  await refreshPoints(await readExtensionState())
+  const state = await readExtensionState()
+  await refreshPoints(state)
+  const mascot = mascotDetails(state.preferences.mascot)
+  mascotSelect.value = mascot.id
+  brandMascot.textContent = mascot.glyph
+  brandMascot.setAttribute('aria-label', `EcoMind ${mascot.label}`)
+  autoWidgetToggle.checked = state.preferences.showWidgetAfterAnalysis
   activeTab = await getActiveTab()
   const hint = pageHint(activeTab?.url)
   retailerValue.textContent = hint.retailer
@@ -137,6 +146,23 @@ analyseButton.addEventListener('click', async () => {
   chrome.scripting.executeScript({ target: { tabId: activeTab.id }, files: ['content.js'] }, () => {
     if (chrome.runtime.lastError) setStatus('access-error', `Chrome could not inject EcoMind: ${chrome.runtime.lastError.message}. Try a normal https product page.`)
   })
+})
+
+mascotSelect.addEventListener('change', async () => {
+  const state = await readExtensionState()
+  state.preferences.mascot = mascotSelect.value as MascotPreference
+  await writeExtensionState(state)
+  const mascot = mascotDetails(state.preferences.mascot)
+  brandMascot.textContent = mascot.glyph
+  brandMascot.setAttribute('aria-label', `EcoMind ${mascot.label}`)
+  await sendToTab({ type: 'ECOMIND_STATUS_UPDATE', state: currentState, detail: 'preferences-changed' })
+})
+
+autoWidgetToggle.addEventListener('change', async () => {
+  const state = await readExtensionState()
+  state.preferences.showWidgetAfterAnalysis = autoWidgetToggle.checked
+  await writeExtensionState(state)
+  await sendToTab({ type: 'ECOMIND_STATUS_UPDATE', state: currentState, detail: autoWidgetToggle.checked ? 'show-widget' : 'disable-widget' })
 })
 
 dashboardButton.addEventListener('click', () => {

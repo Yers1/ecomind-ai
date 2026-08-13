@@ -10,8 +10,9 @@ import { WishlistPage } from './pages/WishlistPage'
 import { AnalyseProductPage } from './pages/AnalyseProductPage'
 import { FeedbackPage } from './pages/FeedbackPage'
 import { InstallExtensionPage } from './pages/InstallExtensionPage'
+import { RetailerInsightsPage } from './pages/RetailerInsightsPage'
 
-const validPages: Page[] = ['home', 'install', 'analyse', 'demo', 'dashboard', 'leaderboard', 'wishlist', 'methodology', 'privacy', 'feedback']
+const validPages: Page[] = ['home', 'install', 'analyse', 'demo', 'dashboard', 'leaderboard', 'wishlist', 'methodology', 'privacy', 'insights', 'feedback']
 
 function pageFromHash(): Page {
   const hash = window.location.hash.replace('#/', '') as Page
@@ -43,6 +44,7 @@ export default function App() {
       {page === 'wishlist' && <WishlistPage navigate={navigate} />}
       {page === 'methodology' && <MethodologyPage navigate={navigate} />}
       {page === 'privacy' && <PrivacyPage navigate={navigate} />}
+      {page === 'insights' && <RetailerInsightsPage />}
       {page === 'feedback' && <FeedbackPage />}
     </AppShell>
   )

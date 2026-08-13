@@ -84,6 +84,8 @@ Then:
 7. Select the injected koala to inspect product name, materials, certification evidence, fulfilment packaging, manufacturer packaging, score, grade, traffic light, confidence and missing data.
 8. Save the item or analyse a second real product for comparison.
 
+After analysis, EcoMind appears as a compact score pill rather than opening over the shop. Select it to open the drawer; use **−** to minimise or **Hide on this page** to remove it temporarily. If hidden, select the EcoMind toolbar icon and **Open EcoMind analysis** to restore it. In the popup you can disable automatic appearance and choose Koala, Panda, Polar Bear, Leaf or Sprout. Both preferences persist in `chrome.storage.local`.
+
 The extension requests only `activeTab`, `scripting` and `storage`. It has no static content script, broad host permission or browsing-history permission. The content script is injected only after the user’s action. Page contents are processed locally and are not sent to a product-analysis server.
 
 To test fixtures, open **Demo Mode** on the web app and analyse a Threadly product. The popup labels Threadly as Demo Mode.
@@ -134,6 +136,10 @@ The production web flow was also exercised in a browser at exactly 390×844 with
 ## Preserved product areas
 
 The existing Demo Mode, wishlist, dashboard, EcoPoints, multi-user leaderboard contract, authentication setup and local stored data remain in place. The extension uses `chrome.storage.local`; the web guest experience uses local storage. Cross-device totals require the optional Supabase setup and a separate sign-in in each interface; see [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Production does not invent leaderboard users when the backend is unconfigured.
+
+## Retailer Insights Demo
+
+Open `/#/insights` or select **Retailer Insights Demo** in the footer. This is a future B2B interface made entirely from fictional aggregate sample values. It is not connected to real users, retailers or analytics and contains no names, emails, browsing history, purchase histories or individual-level records. The page includes preferred materials, recycled-versus-virgin fibres, packaging preferences, certification interest, second-hand demand and compared categories. Its **Download sample CSV** action downloads `ecomind-retailer-insights-demo.csv`, which labels every row as `fictional_demo`.
 
 ## Known limitations
 

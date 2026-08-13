@@ -1,0 +1,11 @@
+data_status,metric_group,metric,value,unit,note
+fictional_demo,materials,Recycled polyester,68,percent,"Invented sample data; not representative"
+fictional_demo,materials,Organic cotton,61,percent,"Invented sample data; not representative"
+fictional_demo,materials,Linen,44,percent,"Invented sample data; not representative"
+fictional_demo,fibres,Recycled fibres,62,percent,"Invented sample data; not representative"
+fictional_demo,fibres,Virgin fibres,38,percent,"Invented sample data; not representative"
+fictional_demo,packaging,Minimal fulfilment packaging,67,percent,"Invented sample data; not representative"
+fictional_demo,packaging,Recyclable manufacturer packaging,59,percent,"Invented sample data; not representative"
+fictional_demo,certifications,OEKO-TEX STANDARD 100,63,percent,"Invented sample data; not representative"
+fictional_demo,circularity,Second-hand alternative,41,percent,"Invented sample data; not representative"
+fictional_demo,categories,T-shirts compared,31,percent,"Invented sample data; not representative"

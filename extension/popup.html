@@ -9,11 +9,7 @@
   <body>
     <main class="popup">
       <header class="brand">
-        <div class="koala" role="img" aria-label="EcoMind koala">
-          <span class="ear ear-left"></span><span class="ear ear-right"></span>
-          <span class="face"><i class="eye eye-left"></i><i class="eye eye-right"></i><i class="nose"></i></span>
-          <span class="leaf"></span>
-        </div>
+        <div id="brandMascot" class="brand-mascot" role="img" aria-label="EcoMind Koala">🐨</div>
         <div><strong>EcoMind AI</strong><span>Climate clarity while you shop</span></div>
       </header>
 
@@ -25,6 +21,15 @@
       </section>
 
       <button id="analyseButton" class="primary-button" type="button" disabled>Analyse this product</button>
+
+      <section class="companion-settings" aria-labelledby="companionTitle">
+        <div><strong id="companionTitle">Your shopping companion</strong><span>Saved locally on this device</span></div>
+        <label for="mascotSelect">Character</label>
+        <select id="mascotSelect" aria-label="Choose EcoMind mascot">
+          <option value="koala">🐨 Koala</option><option value="panda">🐼 Panda</option><option value="polar-bear">🐻‍❄️ Polar Bear</option><option value="leaf">🌿 Leaf</option><option value="sprout">🌱 Sprout</option>
+        </select>
+        <label class="widget-toggle"><input id="autoWidgetToggle" type="checkbox"><span><b>Show the low-key widget after analysis</b><small>Turn off to keep it hidden. The toolbar can always bring it back.</small></span></label>
+      </section>
 
       <section id="trafficResult" class="popup-traffic" hidden aria-live="polite"></section>
       <p class="packaging-note"><strong>Packaging:</strong> fulfilment 5% + manufacturer 5%. Missing evidence stays unknown.</p>
