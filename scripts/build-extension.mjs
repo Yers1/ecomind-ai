@@ -1,9 +1,11 @@
 import { build } from 'esbuild'
 import { cp, mkdir, rm, stat, readFile, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+if (existsSync(resolve(root, '.env.local')) && typeof process.loadEnvFile === 'function') process.loadEnvFile(resolve(root, '.env.local'))
 const source = resolve(root, 'extension')
 const output = resolve(root, 'dist-extension')
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? ''

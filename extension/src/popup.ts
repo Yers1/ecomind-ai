@@ -32,11 +32,11 @@ const weeklyRank = document.querySelector<HTMLElement>('#weeklyRank')!
 const weeklySummary = document.querySelector<HTMLElement>('#weeklySummary')!
 const pointsLabel = document.querySelector<HTMLElement>('#pointsLabel')!
 const authStatus = document.querySelector<HTMLElement>('#authStatus')!
-const otpForm = document.querySelector<HTMLFormElement>('#otpForm')!
+const authForm = document.querySelector<HTMLFormElement>('#authForm')!
 const authEmail = document.querySelector<HTMLInputElement>('#authEmail')!
-const authCode = document.querySelector<HTMLInputElement>('#authCode')!
-const otpCodeRow = document.querySelector<HTMLElement>('#otpCodeRow')!
-const otpButton = document.querySelector<HTMLButtonElement>('#otpButton')!
+const authPassword = document.querySelector<HTMLInputElement>('#authPassword')!
+const signInButton = document.querySelector<HTMLButtonElement>('#signInButton')!
+const createAccountButton = document.querySelector<HTMLButtonElement>('#createAccountButton')!
 const signedInControls = document.querySelector<HTMLElement>('#signedInControls')!
 const syncButton = document.querySelector<HTMLButtonElement>('#syncButton')!
 const importButton = document.querySelector<HTMLButtonElement>('#importButton')!
@@ -45,7 +45,6 @@ const syncStatus = document.querySelector<HTMLElement>('#syncStatus')!
 const mascotSelect = document.querySelector<HTMLSelectElement>('#mascotSelect')!
 const brandMascot = document.querySelector<HTMLElement>('#brandMascot')!
 const autoWidgetToggle = document.querySelector<HTMLInputElement>('#autoWidgetToggle')!
-let otpSent = false
 
 let activeTab: chrome.tabs.Tab | undefined
 let currentState: PageState = 'checking'
@@ -102,11 +101,11 @@ async function refreshPoints(state: ExtensionState) {
   pointsValue.textContent = String(state.points)
   pointsLabel.textContent = 'Local EcoPoints'
   const week = periodSummary(state.pointEvents, 'week')
-  if (!extensionBackendConfigured || !extensionSupabase || !extensionRepository) { authStatus.textContent = 'Backend not configured'; otpForm.hidden = true; signedInControls.hidden = true; weeklyRank.textContent = 'Setup required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
+  if (!extensionBackendConfigured || !extensionSupabase || !extensionRepository) { authStatus.textContent = 'Backend not configured'; authForm.hidden = true; signedInControls.hidden = true; weeklyRank.textContent = 'Setup required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
   const { data } = await extensionSupabase.auth.getSession(); const session = data.session
-  if (!session) { authStatus.textContent = 'Not signed in'; otpForm.hidden = false; signedInControls.hidden = true; weeklyRank.textContent = 'Sign in required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
+  if (!session) { authStatus.textContent = 'Not signed in'; authForm.hidden = false; signedInControls.hidden = true; weeklyRank.textContent = 'Sign in required'; weeklySummary.textContent = `${week.points} local EcoPoints · ${getKoalaLevel(state.points)}`; return }
   if (state.backendAccountId !== session.user.id) { state.backendAccountId = session.user.id; await writeState(state) }
-  authStatus.textContent = session.user.email ?? 'Signed in'; otpForm.hidden = true; signedInControls.hidden = false
+  authStatus.textContent = session.user.email ?? 'Signed in'; authForm.hidden = true; signedInControls.hidden = false
   importButton.hidden = state.importedForAccounts.includes(session.user.id) || !state.pointEvents.some((event) => event.points > 0 && event.actionType !== 'legacy-demo-balance')
   const synced = await syncExtensionQueue(state)
   try { const summary = synced.summary ?? await extensionRepository.getSummary('week'); const entries = await extensionRepository.getLeaderboard('week'); const current = entries.find((entry) => entry.isCurrentUser); pointsValue.textContent = String(summary.allTimePoints); pointsLabel.textContent = 'Synced EcoPoints'; weeklyRank.textContent = current?.rank ? `Rank #${current.rank}` : 'Not opted in'; weeklySummary.textContent = `${summary.periodPoints} weekly EcoPoints · ${summary.koalaLevel}`; const pending = synced.state.syncQueue.filter((item) => item.accountId === session.user.id && item.status !== 'synced').length; syncStatus.textContent = pending ? `${pending} action${pending === 1 ? '' : 's'} still need attention.` : 'All eligible extension actions are synchronised.' } catch (error) { syncStatus.textContent = error instanceof Error ? `Backend unavailable: ${error.message}` : 'Backend unavailable.' }
@@ -179,7 +178,9 @@ leaderboardButton.addEventListener('click', () => {
 
 chrome.runtime.onMessage.addListener((message: StatusMessage) => { if (message.type === 'ECOMIND_STATUS_UPDATE' && message.state) setStatus(message.state, message.detail, message) })
 chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes[STORAGE_KEY]?.newValue) void refreshPoints(changes[STORAGE_KEY].newValue as ExtensionState) })
-otpForm.addEventListener('submit', async (event) => { event.preventDefault(); if (!extensionSupabase) return; otpButton.disabled = true; syncStatus.textContent = 'Contacting authentication service…'; try { if (!otpSent) { const { error } = await extensionSupabase.auth.signInWithOtp({ email: authEmail.value.trim(), options: { shouldCreateUser: true } }); if (error) throw error; otpSent = true; otpCodeRow.hidden = false; authEmail.disabled = true; otpButton.textContent = 'Verify and sign in'; syncStatus.textContent = 'Enter the six-digit code from your email.' } else { const { error } = await extensionSupabase.auth.verifyOtp({ email: authEmail.value.trim(), token: authCode.value.trim(), type: 'email' }); if (error) throw error; await refreshPoints(await readExtensionState()) } } catch (error) { syncStatus.textContent = error instanceof Error ? error.message : 'Authentication failed.' } finally { otpButton.disabled = false } })
+async function authenticate(create: boolean) { if (!extensionSupabase) return; signInButton.disabled = true; createAccountButton.disabled = true; syncStatus.textContent = create ? 'Creating private account…' : 'Signing in…'; try { if (authPassword.value.length < 10) throw new Error('Use at least 10 characters for your password.'); const credentials = { email: authEmail.value.trim(), password: authPassword.value }; const result = create ? await extensionSupabase.auth.signUp(credentials) : await extensionSupabase.auth.signInWithPassword(credentials); if (result.error) throw result.error; if (create && !result.data.session) throw new Error('Account created, but confirmation is still required.'); authPassword.value = ''; syncStatus.textContent = create ? 'Private account created. Public leaderboard participation remains off.' : 'Signed in securely.'; await refreshPoints(await readExtensionState()) } catch (error) { syncStatus.textContent = error instanceof Error ? error.message : 'Authentication failed.' } finally { signInButton.disabled = false; createAccountButton.disabled = false } }
+authForm.addEventListener('submit', (event) => { event.preventDefault(); void authenticate(false) })
+createAccountButton.addEventListener('click', () => void authenticate(true))
 syncButton.addEventListener('click', async () => { syncStatus.textContent = 'Synchronising…'; await refreshPoints((await syncExtensionQueue()).state) })
 importButton.addEventListener('click', async () => { const state = await readExtensionState(); const count = await importExtensionProgress(state); syncStatus.textContent = `${count} recognised local actions queued; product and browsing data were not uploaded.`; await refreshPoints((await syncExtensionQueue(state)).state) })
 signOutButton.addEventListener('click', async () => { await extensionSupabase?.auth.signOut(); const state = await readExtensionState(); state.backendAccountId = null; await writeState(state); await refreshPoints(state) })

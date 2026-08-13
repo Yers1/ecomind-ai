@@ -133,6 +133,8 @@ npm run package:extension
 
 The production web flow was also exercised in a browser at exactly 390×844 with no horizontal overflow: URL check → visible-text extraction → review/correction → shared score → all six guided tasks → feedback link. A generated screenshot was uploaded and processed through the actual local OCR path; material composition was extracted and the review step appeared.
 
+The live leaderboard uses a dedicated Supabase project with version-controlled tables, RLS policies and server-owned EcoPoint rules. Account creation and sign-in use a private email plus a password of at least 10 characters. Email is never a public leaderboard field. Joining is a separate opt-in action; an account can remain private, leave the leaderboard without losing private points, or delete all backend account data.
+
 ## Preserved product areas
 
 The existing Demo Mode, wishlist, dashboard, EcoPoints, multi-user leaderboard contract, authentication setup and local stored data remain in place. The extension uses `chrome.storage.local`; the web guest experience uses local storage. Cross-device totals require the optional Supabase setup and a separate sign-in in each interface; see [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Production does not invent leaderboard users when the backend is unconfigured.

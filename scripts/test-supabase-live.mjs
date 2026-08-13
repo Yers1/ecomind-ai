@@ -17,7 +17,7 @@ assert.ok(users.every(Boolean)); assert.equal(new Set(users.map((user) => user.i
 
 const suffix = Date.now().toString().slice(-6)
 for (const [index, nickname] of [[0, `Test Koala A${suffix}`], [1, `Test Koala B${suffix}`], [2, `Test Koala C${suffix}`]]) {
-  const { error } = await clients[index].from('profiles').upsert({ user_id: users[index].id, display_name: nickname.slice(0, 20), opted_into_leaderboard: index < 2, updated_at: new Date().toISOString() })
+  const { error } = await clients[index].from('profiles').insert({ user_id: users[index].id, display_name: nickname.slice(0, 20), opted_into_leaderboard: index < 2, updated_at: new Date().toISOString() })
   assert.ifError(error)
 }
 const keyA = `live-test-a-${Date.now()}`; const keyB = `live-test-b-${Date.now()}`

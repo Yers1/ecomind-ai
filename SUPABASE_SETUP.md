@@ -5,8 +5,8 @@ The repository contains the real backend integration, but it deliberately stays 
 ## 1. Create and configure the project
 
 1. Create a Supabase project and keep its database password in a password manager.
-2. In **Authentication → Providers → Email**, enable email sign-in and new-user signup.
-3. In **Authentication → Email Templates → Magic Link**, replace the link with a visible six-digit OTP using `{{ .Token }}`. Both the website and extension call `signInWithOtp`, then `verifyOtp` with `type: "email"`.
+2. In **Authentication → Providers → Email**, enable email sign-in and new-user signup. EcoMind uses email and password so the prototype does not depend on a custom SMTP provider. The minimum password length is 10 characters.
+3. Disable mandatory email confirmation for this prototype. A production service should configure its own SMTP provider, re-enable confirmation, password recovery and abuse monitoring before a public-scale launch.
 4. In **Project Settings → API**, copy only:
    - Project URL;
    - public anonymous/anon key.
@@ -44,7 +44,7 @@ vercel env add VITE_SUPABASE_LIVE_VERIFIED
 
 ## 4. Build the extension with the same public project
 
-PowerShell reads `.env.local` only when you explicitly load the values into the process. The easiest safe option is to set them for the current terminal, without printing them:
+`npm run build:extension` automatically reads an untracked `.env.local` when it exists. You can also set the variables for the current terminal without printing them:
 
 ```powershell
 $env:VITE_SUPABASE_URL = "https://YOUR_PROJECT_REF.supabase.co"
@@ -53,7 +53,7 @@ $env:VITE_SUPABASE_LIVE_VERIFIED = "false"
 npm run build:extension
 ```
 
-The build adds one exact Supabase origin to `host_permissions`. An unconfigured build adds no host permission. Website and extension authenticate separately by email OTP; they do not exchange tokens through URLs or access each other's storage.
+The build adds one exact Supabase origin to `host_permissions`. An unconfigured build adds no host permission. Website and extension authenticate separately with the same private email/password account; they do not exchange tokens through URLs or access each other's storage.
 
 ## 5. Create three disposable verification accounts
 
@@ -76,7 +76,7 @@ npm run test:supabase:live
 
 The script creates three independent Supabase clients, opts A and B in, leaves C private, awards different actions through RPC, compares the shared ranking, verifies duplicate rejection, rejects client-supplied point metadata/direct inserts, checks cross-user read/update isolation, checks every period, tests opt-out and deletes account C. Use disposable accounts because the script creates test records.
 
-Then manually sign in as account A in the website and extension using email OTP. Confirm both show the same total/rank. Sign in to a second browser profile and confirm the same backend state appears.
+Then manually sign in as account A in the website and extension with the same private email and password. Confirm both show the same total/rank. Sign in to a second browser profile and confirm the same backend state appears.
 
 For a Docker-backed local policy test before linking a hosted project:
 

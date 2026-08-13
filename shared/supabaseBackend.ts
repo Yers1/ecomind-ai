@@ -79,8 +79,12 @@ export class SupabaseLeaderboardRepository {
   async join(displayName: string) {
     const { data: { user } } = await this.client.auth.getUser()
     if (!user) throw new Error('sign_in_required')
-    const { error } = await this.client.from('profiles').upsert({ user_id: user.id, display_name: displayName, opted_into_leaderboard: true, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    if (error) throw error
+    const profile = { user_id: user.id, display_name: displayName, opted_into_leaderboard: true, updated_at: new Date().toISOString() }
+    const { error } = await this.client.from('profiles').insert(profile)
+    if (error?.code === '23505') {
+      const { error: updateError } = await this.client.from('profiles').update({ display_name: displayName, opted_into_leaderboard: true, updated_at: profile.updated_at }).eq('user_id', user.id)
+      if (updateError) throw updateError
+    } else if (error) throw error
   }
 
   async updateProfile(displayName: string) {

@@ -7,7 +7,10 @@ const contentBundle = await readFile(new URL('../dist-extension/content.js', imp
 const manifest = JSON.parse(await readFile(new URL('../dist-extension/manifest.json', import.meta.url), 'utf8'))
 assert.equal(manifest.manifest_version, 3)
 assert.deepEqual(manifest.permissions, ['activeTab', 'scripting', 'storage'])
-assert.equal('host_permissions' in manifest, false)
+if ('host_permissions' in manifest) {
+  assert.equal(manifest.host_permissions.length, 1, 'A configured build may request only one exact Supabase origin.')
+  assert.match(manifest.host_permissions[0], /^https:\/\/[a-z0-9-]+\.supabase\.co\/\*$/)
+}
 assert.equal('content_scripts' in manifest, false, 'Injection must happen only after the popup action.')
 const persistedStorage = {}
 const runtimeMessages = []

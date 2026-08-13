@@ -25,8 +25,8 @@ interface SupabaseContextValue {
   summary: BackendSummary | null
   queue: SyncQueueItem[]
   message: string | null
-  requestOtp: (email: string) => Promise<void>
-  verifyOtp: (email: string, token: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
+  createAccount: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   refresh: (period?: LeaderboardPeriod) => Promise<void>
   join: (displayName: string) => Promise<void>
@@ -87,18 +87,20 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { if (configured) void refresh(period) }, [configured, period, refresh, user])
 
-  const requestOtp = useCallback(async (email: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!client) throw new Error('Supabase is not configured.')
-    const { error } = await client.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })
-    if (error) throw error
-    setMessage('Check your email for the six-digit EcoMind code.')
-  }, [])
-
-  const verifyOtp = useCallback(async (email: string, token: string) => {
-    if (!client) throw new Error('Supabase is not configured.')
-    const { data, error } = await client.auth.verifyOtp({ email: email.trim(), token: token.trim(), type: 'email' })
+    const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password })
     if (error) throw error
     setUser(data.user); setMessage('Signed in. Your public profile remains off until you choose to join.')
+  }, [])
+
+  const createAccount = useCallback(async (email: string, password: string) => {
+    if (!client) throw new Error('Supabase is not configured.')
+    if (password.length < 10) throw new Error('Use at least 10 characters for your password.')
+    const { data, error } = await client.auth.signUp({ email: email.trim(), password })
+    if (error) throw error
+    if (!data.session) throw new Error('Account created, but sign-in confirmation is still required.')
+    setUser(data.user); setMessage('Private account created. Join the leaderboard only if you choose.')
   }, [])
 
   const signOut = useCallback(async () => { if (client) await client.auth.signOut(); setUser(null); setProfile(null); setRankings([]); setSummary(null) }, [])
@@ -169,7 +171,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 
   const localImportAvailable = useCallback((events: PointEvent[]) => Boolean(user && !localStorage.getItem(`ecomind-import-v1:${user.id}`) && events.some((event) => localEventToQueueItem(event, 'web-import', user.id))), [user])
 
-  const value = useMemo<SupabaseContextValue>(() => ({ configured, liveVerified: config.liveVerified, backendState, user, profile, rankings, summary, queue, message, requestOtp, verifyOtp, signOut, refresh, join, updateNickname, leave, deleteAccount, queueAction, syncQueue, importLocalProgress, localImportAvailable }), [backendState, configured, deleteAccount, importLocalProgress, join, leave, localImportAvailable, message, profile, queue, queueAction, rankings, refresh, requestOtp, signOut, summary, syncQueue, updateNickname, user, verifyOtp])
+  const value = useMemo<SupabaseContextValue>(() => ({ configured, liveVerified: config.liveVerified, backendState, user, profile, rankings, summary, queue, message, signIn, createAccount, signOut, refresh, join, updateNickname, leave, deleteAccount, queueAction, syncQueue, importLocalProgress, localImportAvailable }), [backendState, configured, createAccount, deleteAccount, importLocalProgress, join, leave, localImportAvailable, message, profile, queue, queueAction, rankings, refresh, signIn, signOut, summary, syncQueue, updateNickname, user])
   return <SupabaseContext.Provider value={value}>{children}</SupabaseContext.Provider>
 }
 
