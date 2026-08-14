@@ -32,6 +32,8 @@ To deliver a **100% functional, reliable, and testable end-to-end MVP** within t
 
 > Every score is a provisional educational estimate, not a certification or lifecycle assessment. Missing evidence remains unknown. No retailer partnership is claimed.
 
+> 🚀 **Chrome Web Store Status:** The EcoMind Chrome Extension has been submitted and is currently undergoing official Web Store review. In the meantime, the unpacked extension bundle is available for instant 1-click testing via `release/ecomind-ai-chrome-extension.zip`.
+
 ## What is genuinely supported
 
 The only claimed live marketplace pilot is **Amazon US and Amazon UK clothing product detail pages**. Support is best-effort because Amazon can change markup, localise content, redirect variations or present access challenges. Five real pages were checked separately from fixtures; see [REAL_RETAILER_TESTING.md](REAL_RETAILER_TESTING.md).
