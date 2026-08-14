@@ -11,6 +11,25 @@ EcoMind AI is a testable cross-device sustainability-evidence prototype for clot
 
 **Demo Mode:** the fictional Threadly products are sanitised fixtures. They demonstrate complete UI states; they are not proof of retailer compatibility.
 
+## 🎯 Hackathon Scope & Out-of-Scope Clarification
+
+To deliver a **100% functional, reliable, and testable end-to-end MVP** within the 5-day Techathon timeline, the team made deliberate scoping decisions:
+
+### ✅ Included in Current MVP Build (5-Day Scope)
+* **Live Marketplace Integration:** Fully working Manifest V3 Chrome Extension on **Amazon US & UK** clothing product pages.
+* **Mobile Web Prototype:** Live Web App ([ecomind-ai-two.vercel.app](https://ecomind-ai-two.vercel.app)) with local Tesseract.js screenshot OCR analysis.
+* **Core Green Score Engine:** Deterministic multi-criteria scoring model (Materials 35%, Carbon 25%, Recycled Content 20%, Durability 10%, Packaging 10%).
+* **Confidence & Data Gap Transparency:** Explicitly communicates uncertainty and missing data instead of providing false accuracy.
+* **User Feedback & Retailer Insights Demo:** Live prototype feedback survey integration + B2B aggregate sustainability insights demo interface.
+
+### ⏳ Out-of-Scope for Hackathon MVP (Deferred to 1-Month Roadmap)
+* **Additional Retailers:** Native adapters for H&M, Nike, ASOS, and Shopify (currently present as regression fixtures & future scope).
+* **Advanced AI Vision:** Image-based fabric composition detection via Python + PyTorch (currently using local OCR for seller text).
+* **Production Backend:** Full Django + PostgreSQL backend migration (currently running deterministic client engine + Supabase auth/leaderboard).
+* **Retailer B2B API:** Live data exchange APIs with commercial partners.
+
+*This scoped approach ensures judges evaluate a fully working prototype without unfulfilled promises or broken dependencies.*
+
 > Every score is a provisional educational estimate, not a certification or lifecycle assessment. Missing evidence remains unknown. No retailer partnership is claimed.
 
 ## What is genuinely supported
